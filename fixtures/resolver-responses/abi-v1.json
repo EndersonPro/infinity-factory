@@ -1,0 +1,33 @@
+{
+  "request": {
+    "source_url": "https://media.example.test/video.mp4",
+    "intent": "inspect",
+    "quality_preferences": [{"container":"mp4","mime_type":"video/mp4","quality_label":"1080p"}],
+    "client_context": [{"key":"platform","value":"fixture"}],
+    "correlation_id": "fixture-1"
+  },
+  "responses": {
+    "direct": {"stream": {"url":"https://media.example.test/video.mp4","format":"mp4","mime_type":"video/mp4","quality_label":"1080p","codecs":"avc1","headers":[]}},
+    "candidates": [{"id":"primary","stream":{"url":"https://media.example.test/video.mp4","headers":[]}}],
+    "separated": {
+      "audio": {"url":"https://media.example.test/audio.m4a","headers":[]},
+      "video": {"url":"https://media.example.test/video.mp4","headers":[]},
+      "mux_plan": {"container":"mp4","prefer_stream_copy":true}
+    },
+    "unsupported": {"reason":"unsupported fixture"},
+    "deferred": {"retry_after_seconds":30,"reason":"retry fixture"}
+  },
+  "metadata": {"title":"Fixture","author":"Infinity Factory","thumbnail_url":"https://media.example.test/thumb.jpg"},
+  "headers": [{"name":"accept","value":"video/mp4"}],
+  "errors": ["invalid-input","unsupported-url","policy-denied","upstream-failure","timeout","malformed-response","rate-limited","internal"],
+  "error_samples": [
+    {"kind":"invalid-input","retryable":false,"safe_message":"invalid"},
+    {"kind":"unsupported-url","retryable":false,"safe_message":"unsupported"},
+    {"kind":"policy-denied","retryable":false,"safe_message":"denied"},
+    {"kind":"upstream-failure","retryable":true,"safe_message":"upstream"},
+    {"kind":"timeout","retryable":true,"safe_message":"timeout"},
+    {"kind":"malformed-response","retryable":false,"safe_message":"malformed"},
+    {"kind":"rate-limited","retryable":true,"safe_message":"limited"},
+    {"kind":"internal","retryable":false,"safe_message":"internal"}
+  ]
+}

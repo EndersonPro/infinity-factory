@@ -1,0 +1,16 @@
+[package]
+name = "direct-url"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bex-media-url-resolver = { path = "../../sdk/bex-media-url-resolver" }
+url = "2.5.7"
+
+[package.metadata.component]
+package = "component:media-url-resolver"

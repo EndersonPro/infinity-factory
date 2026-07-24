@@ -1,0 +1,22 @@
+# Rust build and generated release artifacts
+target/
+dist/
+.tools/
+plugins/*.bex
+
+# Local planning and agent metadata
+openspec/
+.atl/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system state
+.DS_Store
+.idea/
+*.iml
+.vscode/
+*.swp
+*~

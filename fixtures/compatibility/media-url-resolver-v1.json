@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "contract": "component:media-url-resolver@1.0.0",
+  "world": "media-url-resolver",
+  "export": "resolver.resolve",
+  "wit_sha256": "5d69866bf025462a125f4aec143cdc71eef9a2a612dcb611d1bb86487aec2b38",
+  "representative_fixture": "../resolver-responses/abi-v1.json"
+}

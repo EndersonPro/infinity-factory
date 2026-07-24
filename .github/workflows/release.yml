@@ -1,0 +1,35 @@
+name: Release BEX Factory
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: 1.94.1
+          targets: wasm32-unknown-unknown, wasm32-wasip1, wasm32-wasip2
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: Install pinned component tooling
+        run: cargo install cargo-component --version 0.21.1 --locked
+      - run: ./scripts/check.sh
+      - run: ./scripts/build-plugins.sh
+        env:
+          ALLOW_WASIP2_FALLBACK: "0"
+      - name: Publish immutable assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release create "$TAG" dist/*.bex dist/bex-factory.json --target "$GITHUB_SHA" --generate-notes
