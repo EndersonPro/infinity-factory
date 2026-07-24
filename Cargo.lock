@@ -418,6 +418,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "instagram"
+version = "0.1.0"
+dependencies = [
+ "bex-media-url-resolver-v2",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
