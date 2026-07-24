@@ -112,6 +112,64 @@ fn uses_same_page_relay_only_for_graphql_schema_drift() {
 }
 
 #[test]
+fn accepts_query_bearing_share_url_and_strips_query_before_get() {
+    // A real Instagram share link carries allowlisted query keys
+    // (`igsh`/`utm_source`/`utm_medium`). The exported Wasm Guest routes these
+    // straight through `resolve_public` without `validate_resolver_request`,
+    // relying on `classify_url` to accept and DISCARD the query before any
+    // network call. Only the canonical, query-free URL may reach the host GET.
+    const SHARE: &str = "https://www.instagram.com/reel/zzzzzzzzzzzzzzzzzzzzzz/?igsh=SYNTHETIC123&utm_source=ig_web_copy_link&utm_medium=share_sheet";
+    const CANONICAL: &str = "https://www.instagram.com/reel/zzzzzzzzzzzzzzzzzzzzzz/";
+    assert!(SHARE.contains("?igsh="), "input must carry a query string");
+    assert!(
+        !CANONICAL.contains('?'),
+        "GET expectation must be query-free"
+    );
+
+    let page = BASIC.replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");
+    let mut client = MockHttpsClient::new(vec![
+        // Strict URL equality: if the query were not stripped, the request URL
+        // would still carry `igsh`/`utm_*` and fail to match this expectation.
+        ExpectedCall::Get(
+            GetRequest {
+                url: CANONICAL.into(),
+                headers: vec![],
+            },
+            Ok(response(CANONICAL, 200, page.as_bytes())),
+        ),
+        ExpectedCall::Graphql(PublicGraphqlExpectation::new(
+            "https://www.instagram.com/api/graphql",
+            "PolarisLoggedOutDesktopWWWPostRootContentQuery",
+            "27130156389949648",
+            VARIABLES,
+            18,
+            graphql(DIRECT),
+        )),
+    ]);
+
+    let result = resolve_public(&mut client, SHARE).unwrap();
+    let Resolution::Direct(stream) = result.resolution else {
+        panic!("expected direct video from query-bearing share link")
+    };
+    assert_eq!(stream.url, "https://cdn.example.invalid/direct.mp4");
+    assert_eq!(
+        client
+            .observations()
+            .iter()
+            .map(|item| item.operation)
+            .collect::<Vec<_>>(),
+        ["get", "post-public-graphql"]
+    );
+    // Success plus a clean verify proves the GET matched the canonical,
+    // query-free URL exactly: no `igsh`/`utm_*` value leaked to the network.
+    assert!(client.verify().is_ok());
+    let rendered = format!("{:?}", client.observations());
+    assert!(!rendered.contains("SYNTHETIC123"));
+    assert!(!rendered.contains("igsh"));
+    assert!(!rendered.contains("SENSITIVE_SENTINEL"));
+}
+
+#[test]
 fn rejects_partial_duplicate_or_forbidden_fallback() {
     let duplicate = String::from_utf8(CAROUSEL.to_vec()).unwrap().replace(
         "https://cdn.example.invalid/second.mp4",
