@@ -14,6 +14,21 @@
         "version": "1.0.0",
         "world": "media-url-resolver"
       }
+    },
+    {
+      "asset_name": "instagram.bex",
+      "asset_sha256": "134ba780df3b9f1dd5ef7c15acede08cfd60047f353f18c11c51b8fa876a93df",
+      "asset_size": 117673,
+      "id": "media-url-resolver.infinity-factory.instagram",
+      "name": "Instagram Public Resolver",
+      "type": "media-url-resolver",
+      "version": "2",
+      "wit": {
+        "package": "component:media-url-resolver",
+        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "version": "2.0.0",
+        "world": "media-url-resolver"
+      }
     }
   ],
   "schema_version": "1"

@@ -6,15 +6,20 @@ command -v cargo-component >/dev/null || {
 	exit 1
 }
 wasip1_lib=$(rustc --print target-libdir --target wasm32-wasip1 2>/dev/null || true)
-if [[ -n "$wasip1_lib" && -d "$wasip1_lib" ]]; then
-	cargo component build --release -p direct-url
-elif [[ "${ALLOW_WASIP2_FALLBACK:-1}" == "1" ]]; then
-	echo 'wasm32-wasip1 is unavailable; building the native WASIp2 component fallback'
-	cargo build --release -p direct-url --target wasm32-wasip2
-else
-	echo 'wasm32-wasip1 is required for the CI component build' >&2
-	exit 1
-fi
+build_plugin() {
+	local crate="$1"
+	if [[ -n "$wasip1_lib" && -d "$wasip1_lib" ]]; then
+		cargo component build --release -p "$crate"
+	elif [[ "${ALLOW_WASIP2_FALLBACK:-1}" == "1" ]]; then
+		echo "wasm32-wasip1 is unavailable; building the native WASIp2 component fallback for $crate"
+		cargo build --release -p "$crate" --target wasm32-wasip2
+	else
+		echo 'wasm32-wasip1 is required for the CI component build' >&2
+		exit 1
+	fi
+}
+build_plugin direct-url
+build_plugin instagram
 rm -rf "$OUTPUT_DIR"
 cargo run --locked -p factory-validator -- pack-all --output "$OUTPUT_DIR"
 test -f "$OUTPUT_DIR/bex-factory.json"
