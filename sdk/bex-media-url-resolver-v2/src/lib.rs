@@ -16,6 +16,8 @@ pub use exports::component::media_url_resolver::resolver::{
     QualityPreference, Resolution, ResolveIntent, ResolveRequest, ResolveResponse, ResolverError,
     ResolverErrorKind, SeparatedStreams, Unsupported,
 };
+mod mock;
+pub use mock::{ExpectedCall, MockHttpsClient, Observation, PublicGraphqlExpectation};
 #[macro_export]
 macro_rules! export_resolver_v2 {
     ($component:ident) => {
