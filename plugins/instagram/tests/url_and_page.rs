@@ -115,6 +115,19 @@ fn extracts_page_state_when_eqmc_marker_carries_a_nonce() {
 }
 
 #[test]
+fn extracts_lsd_from_multi_key_eqmc_payload_with_nonce() {
+    // Mirrors the live logged-out payload: a nonce on the tag and an `__eqmc`
+    // JSON object that carries `l` alongside other beacon fields.
+    let page = include_str!("../fixtures/page-eqmc-multikey.html")
+        .replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");
+    let state = extract_page_state(page.as_bytes()).unwrap();
+    assert!(!format!("{state:?}").contains("SENSITIVE_SENTINEL"));
+    let (lsd, relay) = state.take();
+    assert_eq!(format!("{lsd:?}"), "[REDACTED]");
+    assert!(relay.is_none());
+}
+
+#[test]
 fn rejects_missing_duplicate_malformed_or_oversized_page_state() {
     let valid = include_str!("../fixtures/page-basic.html")
         .replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");

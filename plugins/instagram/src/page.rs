@@ -5,6 +5,7 @@ use std::fmt;
 const SCRIPT_END: &str = "</script>";
 const EQMC_OPEN: &str = "<script id=\"__eqmc\" type=\"application/json\"";
 const EQMC_ATTR_MAX: usize = 256;
+const EQMC_BYTES: usize = 8_192;
 const RELAY: &str = "<script type=\"application/json\" data-sjs=\"RelayPrefetchedStreamCache\">";
 const RELAY_BYTES: usize = 65_536;
 
@@ -76,9 +77,17 @@ pub fn extract_page_state(body: &[u8]) -> Result<PageState, PageError> {
     }
     let html = std::str::from_utf8(body).map_err(|_| PageError::Invalid)?;
     let eqmc = selected_eqmc(html)?.ok_or(PageError::Invalid)?;
-    let token = eqmc
-        .strip_prefix("{\"l\":\"")
-        .and_then(|value| value.strip_suffix("\"}"))
+    if eqmc.len() > EQMC_BYTES {
+        return Err(PageError::Invalid);
+    }
+    // The logged-out `__eqmc` payload is a small JSON object that carries the
+    // LSD under key `l` alongside other beacon fields (`u`/`e`/`s`/`w`/`f`).
+    // Read `l` structurally rather than assuming a single-key `{"l":"..."}`
+    // shape, which Instagram no longer emits.
+    let parsed: Value = serde_json::from_str(eqmc).map_err(|_| PageError::Invalid)?;
+    let token = parsed
+        .get("l")
+        .and_then(Value::as_str)
         .filter(|value| !value.contains(['\"', '\\']))
         .ok_or(PageError::Invalid)?;
     let lsd = EphemeralLsd::new(token.to_owned()).map_err(|_| PageError::Invalid)?;
