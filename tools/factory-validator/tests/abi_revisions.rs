@@ -1,3 +1,4 @@
+use factory_validator::{ACCEPTED, accepted_for_manifest};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{fs, path::PathBuf};
@@ -125,6 +126,65 @@ fn abi_v2_policy_identity() {
         read("compatibility/media-url-resolver-v2-host-contract.md")
             .contains("external native host")
     );
+}
+
+#[test]
+fn accepted_revision_table_binds_exact_on_disk_wit() {
+    for revision in ACCEPTED {
+        let wit = read(revision.wit_path);
+        assert_eq!(
+            wit.lines().next(),
+            Some(format!(
+                "package {}@{};",
+                revision.package, revision.version
+            ))
+            .as_deref()
+        );
+        assert!(!wit.is_empty());
+    }
+    assert_eq!(ACCEPTED.len(), 2, "only v1 and v2 are accepted revisions");
+}
+
+#[test]
+fn resolves_the_real_direct_url_manifest_as_legacy_v1() {
+    let manifest: Value = serde_json::from_str(&read("plugins/direct-url/manifest.json"))
+        .expect("manifest must be JSON");
+    assert!(
+        manifest.get("abi").is_none(),
+        "direct-url stays legacy-shaped"
+    );
+    let revision = accepted_for_manifest(&manifest).expect("legacy manifest must resolve to v1");
+    assert_eq!(revision.version, "1.0.0");
+}
+
+#[test]
+fn resolves_an_exact_v2_manifest_and_rejects_unknown_or_mismatched_ones() {
+    let exact = serde_json::json!({
+        "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+        "network_policy": "instagram-public-v1",
+    });
+    let revision = accepted_for_manifest(&exact).expect("exact v2 manifest must resolve");
+    assert_eq!(revision.version, "2.0.0");
+    assert_eq!(
+        revision.wit_path,
+        "wit/media-url-resolver-v2/wit/media-url-resolver.wit"
+    );
+
+    let unknown = serde_json::json!({
+        "abi": {"package": "component:media-url-resolver", "version": "3.0.0", "world": "media-url-resolver"},
+    });
+    assert!(accepted_for_manifest(&unknown).is_err());
+
+    let mismatched_policy = serde_json::json!({
+        "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+        "network_policy": "other-policy",
+    });
+    assert!(accepted_for_manifest(&mismatched_policy).is_err());
+
+    let mismatched_package = serde_json::json!({
+        "abi": {"package": "component:other", "version": "2.0.0", "world": "media-url-resolver"},
+    });
+    assert!(accepted_for_manifest(&mismatched_package).is_err());
 }
 
 #[test]
