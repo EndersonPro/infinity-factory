@@ -8,6 +8,11 @@ use std::{
 };
 use tar::{Builder, Header};
 
+mod revision;
+pub use revision::{
+    ACCEPTED, AcceptedRevision, V1, V2, accepted_for_manifest, validate_component_revision,
+};
+
 pub const REQUIRED_ERRORS: [&str; 8] = [
     "invalid-input",
     "unsupported-url",
@@ -276,7 +281,10 @@ pub fn hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-/// Package every plugin in `root/plugins` into `output`.
+/// Package every plugin in `root/plugins` into `output`, binding each one to
+/// the exact ABI revision its manifest declares. Adding a new revision never
+/// changes an unrelated plugin's packaged bytes or factory index entry:
+/// every plugin is packed independently against its own accepted revision.
 pub fn pack_all(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     if output.exists() {
         fs::remove_dir_all(output)?;
@@ -296,6 +304,8 @@ pub fn pack_all(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
         {
             return Err(format!("invalid resolver manifest: {}", plugin.display()).into());
         }
+        let revision = accepted_for_manifest(&manifest)
+            .map_err(|error| format!("{}: {error}", plugin.display()))?;
         let crate_name = plugin
             .file_name()
             .ok_or("plugin path has no directory name")?
@@ -311,20 +321,23 @@ pub fn pack_all(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
             })
             .find(|path| path.is_file())
             .ok_or_else(|| format!("missing built component for {crate_name}"))?;
+        let wasm_bytes = fs::read(&wasm)?;
+        validate_component_revision(&wasm_bytes, revision)
+            .map_err(|error| format!("{}: {error}", plugin.display()))?;
+        let wit_path = root.join(revision.wit_path);
+        let wit_bytes = fs::read(&wit_path)?;
         let asset_name = format!("{}.bex", id.rsplit('.').next().unwrap_or(id));
         let asset = output.join(&asset_name);
-        let wit_path = root.join("wit/media-url-resolver/wit/media-url-resolver.wit");
-        pack(&plugin, &wasm, wit_path.clone(), &asset)?;
+        pack(&plugin, &wasm, wit_path, &asset)?;
         validate_archive(&asset)?;
         let bytes = fs::read(&asset)?;
-        let wit_bytes = fs::read(&wit_path)?;
         entries.push(serde_json::json!({
             "id": id, "name": required(&manifest, "name")?, "version": version,
             "type": "media-url-resolver", "asset_name": asset_name,
             "asset_sha256": hex(&bytes), "asset_size": bytes.len(),
             "wit": {
-                "package": "component:media-url-resolver", "version": "1.0.0",
-                "world": "media-url-resolver", "sha256": hex(&wit_bytes)
+                "package": revision.package, "version": revision.version,
+                "world": revision.world, "sha256": hex(&wit_bytes)
             }
         }));
     }
@@ -507,63 +520,17 @@ mod tests {
         assert!(validate_fixture(&value.to_string()).is_err());
     }
 
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::{SystemTime, UNIX_EPOCH};
-    static NEXT: AtomicU64 = AtomicU64::new(0);
-
-    fn workspace() -> PathBuf {
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+    // Packaging/reproducibility/archive-inventory coverage lives in
+    // tests/archive_mismatch.rs, which additionally binds each fixture to
+    // its exact accepted ABI revision via real component-model shapes.
+    #[test]
+    fn rejects_unsafe_archive_inventory_with_real_component_bytes() {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
             .expect("test fixture must be valid")
             .as_nanos();
-        let unique = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!("infinity-factory-{stamp}-{unique}"));
-        fs::create_dir_all(root.join("plugins/direct-url")).expect("test fixture must be valid");
-        fs::create_dir_all(root.join("target/wasm32-wasip2/release"))
-            .expect("test fixture must be valid");
-        fs::create_dir_all(root.join("wit/media-url-resolver/wit"))
-            .expect("test fixture must be valid");
-        fs::write(
-            root.join("plugins/direct-url/manifest.json"),
-            r#"{"id":"test.direct-url","name":"Direct","version":"1","type":"media-url-resolver"}"#,
-        )
-        .expect("test fixture must be valid");
-        fs::write(
-            root.join("target/wasm32-wasip2/release/direct_url.wasm"),
-            b"\0asm\r\0\x01\0",
-        )
-        .expect("test fixture must be valid");
-        fs::write(
-            root.join("wit/media-url-resolver/wit/media-url-resolver.wit"),
-            b"package test:fixture;",
-        )
-        .expect("test fixture must be valid");
-        root
-    }
-
-    #[test]
-    fn packages_reproducibly_and_binds_factory_digest() {
-        let root = workspace();
-        let output = root.join("dist");
-        pack_all(&root, &output).expect("test fixture must be valid");
-        let first = fs::read(output.join("direct-url.bex")).expect("test fixture must be valid");
-        pack_all(&root, &output).expect("test fixture must be valid");
-        let second = fs::read(output.join("direct-url.bex")).expect("test fixture must be valid");
-        assert_eq!(first, second);
-        validate_archive(&output.join("direct-url.bex")).expect("test fixture must be valid");
-        let bytes = fs::read(output.join("bex-factory.json")).expect("test fixture must be valid");
-        let index: serde_json::Value =
-            serde_json::from_slice(&bytes).expect("test fixture must be valid");
-        assert_eq!(index["plugins"][0]["asset_sha256"], hex(&second));
-        let wit = fs::read(root.join("wit/media-url-resolver/wit/media-url-resolver.wit"))
-            .expect("test fixture must be valid");
-        assert_eq!(index["plugins"][0]["wit"]["sha256"], hex(&wit));
-        fs::remove_dir_all(root).expect("test fixture must be valid");
-    }
-
-    #[test]
-    fn rejects_unsafe_archive_inventory() {
-        let root = workspace();
+        let root = std::env::temp_dir().join(format!("infinity-factory-lib-{stamp}"));
+        fs::create_dir_all(&root).expect("test fixture must be valid");
         let archive = root.join("unsafe.bex");
         let encoder = zstd::Encoder::new(
             fs::File::create(&archive).expect("test fixture must be valid"),
