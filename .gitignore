@@ -7,6 +7,7 @@ plugins/*.bex
 # Local planning and agent metadata
 openspec/
 .atl/
+.codegraph/
 
 # Local environment and credentials
 .env
