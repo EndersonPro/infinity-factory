@@ -12,12 +12,18 @@ pub use component::media_url_resolver::https_client::{
     GetRequest, Header, HttpsError, HttpsResponse, PublicGraphqlRequest,
 };
 pub use exports::component::media_url_resolver::resolver::{
-    Candidate, Deferred, Guest as ResolverGuest, MediaStream, Metadata, MuxContainer, MuxPlan,
-    QualityPreference, Resolution, ResolveIntent, ResolveRequest, ResolveResponse, ResolverError,
-    ResolverErrorKind, SeparatedStreams, Unsupported,
+    Candidate, ContextEntry, Deferred, Guest as ResolverGuest, Header as ResolverHeader,
+    MediaStream, Metadata, MuxContainer, MuxPlan, QualityPreference, Resolution, ResolveIntent,
+    ResolveRequest, ResolveResponse, ResolverError, ResolverErrorKind, SeparatedStreams,
+    Unsupported,
 };
 mod mock;
+mod resolver;
 pub use mock::{ExpectedCall, MockHttpsClient, Observation, PublicGraphqlExpectation};
+pub use resolver::{
+    bounds as resolver_bounds, validate_request as validate_resolver_request,
+    validate_response as validate_resolver_response,
+};
 #[macro_export]
 macro_rules! export_resolver_v2 {
     ($component:ident) => {
