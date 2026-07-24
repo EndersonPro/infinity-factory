@@ -2,6 +2,7 @@
 members = [
   "tools/factory-validator",
   "sdk/bex-media-url-resolver",
+  "sdk/bex-media-url-resolver-v2",
   "plugins/direct-url",
 ]
 resolver = "2"

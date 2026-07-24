@@ -17,6 +17,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bex-media-url-resolver-v2"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "url",
+ "wit-bindgen",
+ "wit-bindgen-rt",
+ "zeroize",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -926,6 +937,12 @@ dependencies = [
  "syn 2.0.119",
  "synstructure",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
 
 [[package]]
 name = "zerotrie"

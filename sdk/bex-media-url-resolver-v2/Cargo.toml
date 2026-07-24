@@ -1,0 +1,12 @@
+[package]
+name = "bex-media-url-resolver-v2"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+[dependencies]
+serde_json = "1.0.151"
+url = "2.5.7"
+wit-bindgen = "=0.44.0"
+wit-bindgen-rt = { version = "=0.44.0", features = ["bitflags"] }
+zeroize = "1.8.2"
