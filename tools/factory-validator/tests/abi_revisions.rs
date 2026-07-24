@@ -1,0 +1,148 @@
+use serde_json::Value;
+use sha2::{Digest, Sha256};
+use std::{fs, path::PathBuf};
+
+fn root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+fn read(path: &str) -> String {
+    fs::read_to_string(root().join(path)).expect("contract artifact must exist")
+}
+
+fn hex(value: &str) -> String {
+    format!("{:x}", Sha256::digest(value.as_bytes()))
+}
+
+fn assert_policy(policy: &Value) {
+    assert_eq!(policy["id"], "instagram-public-v1");
+    assert_eq!(policy["abi"]["package"], "component:media-url-resolver");
+    assert_eq!(policy["abi"]["version"], "2.0.0");
+    assert_eq!(policy["abi"]["world"], "media-url-resolver");
+    assert_eq!(
+        policy["operations"],
+        serde_json::json!(["get", "post-public-graphql"])
+    );
+    assert_eq!(
+        policy["allowed_hosts"],
+        serde_json::json!(["instagram.com", "www.instagram.com"])
+    );
+    assert_eq!(
+        policy["graphql_endpoint"],
+        "https://www.instagram.com/api/graphql"
+    );
+    assert_eq!(
+        policy["get_headers"],
+        serde_json::json!(["accept", "accept-language"])
+    );
+    assert_eq!(
+        policy["response_headers"],
+        serde_json::json!([
+            "cache-control",
+            "content-length",
+            "content-type",
+            "etag",
+            "last-modified",
+            "retry-after"
+        ])
+    );
+    let limits = &policy["limits"];
+    for (key, value) in [
+        ("url_bytes", 2048),
+        ("lsd_bytes", 256),
+        ("friendly_name_bytes", 128),
+        ("doc_id_bytes", 64),
+        ("variables_bytes", 32768),
+        ("form_body_bytes", 65536),
+        ("response_body_bytes", 4194304),
+        ("deadline_ms", 10000),
+        ("redirects", 3),
+        ("cookies", 32),
+        ("cookie_bytes", 4096),
+        ("cookie_jar_bytes", 16384),
+    ] {
+        assert_eq!(limits[key], value, "wrong {key}");
+    }
+}
+
+#[test]
+fn abi_v2_policy_identity() {
+    let v1 = read("wit/media-url-resolver/wit/media-url-resolver.wit");
+    let v1_revision = read("wit/media-url-resolver/REVISION");
+    let v1_sha = v1_revision
+        .lines()
+        .find_map(|line| line.strip_prefix("sha256="))
+        .expect("v1 revision must contain sha256");
+    assert_eq!(hex(&v1), v1_sha);
+
+    let v2 = read("wit/media-url-resolver-v2/wit/media-url-resolver.wit");
+    for token in [
+        "package component:media-url-resolver@2.0.0;",
+        "interface https-client",
+        "get: func",
+        "post-public-graphql: func",
+        "import https-client;",
+        "export resolver;",
+    ] {
+        assert!(v2.contains(token), "missing {token}");
+    }
+    assert!(!v2.contains("method:"));
+    assert_eq!(v2.matches("import ").count(), 1);
+    assert_eq!(v2.matches(": func").count(), 3);
+
+    let policy_text = read("compatibility/media-url-resolver-v2-policy.json");
+    assert_eq!(
+        hex(&policy_text),
+        "2fa56985022a3ab2979f007b06a5d35850622a7734d572a4fc966434678e74c0"
+    );
+    let policy: Value = serde_json::from_str(&policy_text).expect("policy must be JSON");
+    assert_policy(&policy);
+    let v2_sha = hex(&v2);
+    assert_eq!(policy["abi"]["wit_sha256"], v2_sha);
+    assert!(
+        read("wit/media-url-resolver-v2/REVISION")
+            .lines()
+            .any(|line| line == format!("sha256={v2_sha}"))
+    );
+
+    let vectors_text = read("compatibility/v2/abi-identity-vectors.json");
+    assert_eq!(
+        hex(&vectors_text),
+        "024bc98262fd539470cf3f33a40bb585792ad187123a9009cd8901cb5f5328c6"
+    );
+    let vectors: Value = serde_json::from_str(&vectors_text).expect("vectors must be JSON");
+    assert!(
+        vectors["valid"]
+            .as_array()
+            .is_some_and(|items| !items.is_empty())
+    );
+    assert!(
+        vectors["invalid"]
+            .as_array()
+            .is_some_and(|items| items.len() >= 8)
+    );
+    assert!(
+        read("compatibility/media-url-resolver-v2-host-contract.md")
+            .contains("external native host")
+    );
+}
+
+#[test]
+fn rejects_policy_identity_drift() {
+    let source: Value =
+        serde_json::from_str(&read("compatibility/media-url-resolver-v2-policy.json"))
+            .expect("policy must be JSON");
+    for pointer in [
+        "/abi/version",
+        "/abi/world",
+        "/graphql_endpoint",
+        "/limits/deadline_ms",
+    ] {
+        let mut changed = source.clone();
+        changed
+            .pointer_mut(pointer)
+            .expect("pointer must exist")
+            .clone_from(&Value::Null);
+        assert!(std::panic::catch_unwind(|| assert_policy(&changed)).is_err());
+    }
+}

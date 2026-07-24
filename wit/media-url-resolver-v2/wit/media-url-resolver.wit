@@ -1,0 +1,72 @@
+package component:media-url-resolver@2.0.0;
+
+interface https-client {
+  record header { name: string, value: string }
+  record get-request { url: string, headers: list<header> }
+  record public-graphql-request {
+    url: string, lsd: string, friendly-name: string,
+    doc-id: string, variables: string
+  }
+  record https-response {
+    status: u16, final-url: string, headers: list<header>, body: list<u8>
+  }
+  variant https-error {
+    invalid-request, blocked-host, timeout, redirect-rejected,
+    request-too-large, response-too-large, transport-failure, malformed-upstream
+  }
+  get: func(request: get-request) -> result<https-response, https-error>;
+  post-public-graphql: func(request: public-graphql-request)
+    -> result<https-response, https-error>;
+}
+
+interface resolver {
+  enum resolve-intent { play, download, inspect }
+  record quality-preference {
+    container: option<string>, mime-type: option<string>,
+    quality-label: option<string>, max-height: option<u32>, max-bitrate: option<u64>
+  }
+  record context-entry { key: string, value: string }
+  record header { name: string, value: string }
+  record media-stream {
+    url: string, format: option<string>, mime-type: option<string>,
+    quality-label: option<string>, codecs: option<string>,
+    expires-at-unix-seconds: option<u64>, byte-range-supported: bool,
+    headers: list<header>
+  }
+  record metadata {
+    title: option<string>, author: option<string>, thumbnail-url: option<string>,
+    duration-milliseconds: option<u64>
+  }
+  record candidate { id: string, %stream: media-stream }
+  enum mux-container { mp4, webm, matroska }
+  record mux-plan { container: mux-container, prefer-stream-copy: bool }
+  record separated-streams {
+    audio: media-stream, video: media-stream, mux-plan: mux-plan
+  }
+  record unsupported { reason: string }
+  record deferred { retry-after-seconds: option<u32>, reason: string }
+  variant resolution {
+    direct(media-stream), candidates(list<candidate>), separated(separated-streams),
+    unsupported(unsupported), deferred(deferred)
+  }
+  record resolve-request {
+    source-url: string, intent: resolve-intent,
+    quality-preferences: list<quality-preference>,
+    client-context: list<context-entry>, correlation-id: string
+  }
+  record resolve-response { metadata: option<metadata>, resolution: resolution }
+  enum resolver-error-kind {
+    invalid-input, unsupported-url, policy-denied, upstream-failure,
+    timeout, malformed-response, rate-limited, private-or-unavailable,
+    unavailable, internal
+  }
+  record resolver-error {
+    kind: resolver-error-kind, retryable: bool, safe-message: string
+  }
+  resolve: func(request: resolve-request) -> result<resolve-response, resolver-error>;
+}
+
+world media-url-resolver {
+  import https-client;
+  export resolver;
+}

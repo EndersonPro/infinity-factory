@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "id": "instagram-public-v1",
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver",
+    "wit_sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5"
+  },
+  "operations": ["get", "post-public-graphql"],
+  "allowed_hosts": ["instagram.com", "www.instagram.com"],
+  "get_path_families": ["p", "reel", "reels", "tv"],
+  "graphql_endpoint": "https://www.instagram.com/api/graphql",
+  "get_headers": ["accept", "accept-language"],
+  "host_injected_graphql_headers": [
+    "accept", "accept-language", "content-length", "content-type", "cookie",
+    "origin", "referer", "user-agent", "x-asbd-id", "x-fb-friendly-name",
+    "x-fb-lsd", "x-ig-app-id"
+  ],
+  "response_headers": [
+    "cache-control", "content-length", "content-type", "etag",
+    "last-modified", "retry-after"
+  ],
+  "graphql_form_fields": [
+    "__a", "__ccg", "__comet_req", "__req", "__user", "av", "doc_id",
+    "dpr", "fb_api_caller_class", "fb_api_req_friendly_name", "lsd",
+    "server_timestamps", "variables"
+  ],
+  "limits": {
+    "url_bytes": 2048,
+    "get_headers": 8,
+    "get_header_name_bytes": 64,
+    "get_header_value_bytes": 1024,
+    "get_headers_combined_bytes": 4096,
+    "lsd_bytes": 256,
+    "friendly_name_bytes": 128,
+    "doc_id_bytes": 64,
+    "variables_bytes": 32768,
+    "form_body_bytes": 65536,
+    "response_headers": 16,
+    "response_header_name_bytes": 64,
+    "response_header_value_bytes": 4096,
+    "response_headers_combined_bytes": 16384,
+    "response_body_bytes": 4194304,
+    "deadline_ms": 10000,
+    "redirects": 3,
+    "cookies": 32,
+    "cookie_bytes": 4096,
+    "cookie_jar_bytes": 16384,
+    "cookie_idle_seconds": 900
+  },
+  "cookies": {
+    "ownership": "host-opaque",
+    "scope": ["component-instance", "package-digest", "network-policy"],
+    "authenticated_sessions": false
+  },
+  "redacted": [
+    "authorization", "cookie", "set-cookie", "lsd", "variables",
+    "form-body", "response-body", "query-values", "transport-diagnostics"
+  ]
+}
