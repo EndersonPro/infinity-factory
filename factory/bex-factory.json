@@ -17,8 +17,8 @@
     },
     {
       "asset_name": "instagram.bex",
-      "asset_sha256": "134ba780df3b9f1dd5ef7c15acede08cfd60047f353f18c11c51b8fa876a93df",
-      "asset_size": 117673,
+      "asset_sha256": "7a8fcccbaf19ac25d226b2b02a965c25b37c41b1f5a678136bfbc6e17862d17e",
+      "asset_size": 117885,
       "id": "media-url-resolver.infinity-factory.instagram",
       "name": "Instagram Public Resolver",
       "type": "media-url-resolver",
