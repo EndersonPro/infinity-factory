@@ -81,6 +81,28 @@ pub fn accepted_for_manifest(manifest: &Value) -> Result<&'static AcceptedRevisi
     Ok(revision)
 }
 
+/// Parsed import/export shape of a built component, scoped to the
+/// `component:media-url-resolver/*` package plus the unrelated host imports
+/// (e.g. WASI) the host reports as `unprovided` without rejecting them. This
+/// extraction is policy-neutral: it carries no network-policy identity.
+pub struct ComponentShapeReport {
+    pub package_imports: Vec<String>,
+    pub package_exports: Vec<String>,
+    pub unprovided_imports: Vec<String>,
+}
+
+/// The neutral component shape an accepted revision expects, independent of
+/// any host policy binding. Hosts compose their own Instagram/Bandcamp policy
+/// identities on top of this shared, policy-neutral skeleton.
+pub struct AbiShape {
+    pub package: &'static str,
+    pub version: &'static str,
+    pub world: &'static str,
+    pub wit_path: &'static str,
+    pub package_imports: Vec<&'static str>,
+    pub package_exports: Vec<&'static str>,
+}
+
 /// Decode a component's own top-level import/export names via the
 /// WebAssembly component-model binary format (not text/WIT matching).
 fn component_bindings(wasm: &[u8]) -> Result<(Vec<String>, Vec<String>), String> {
@@ -104,24 +126,55 @@ fn component_bindings(wasm: &[u8]) -> Result<(Vec<String>, Vec<String>), String>
     Ok((imports, exports))
 }
 
+/// Inspect a built component into a policy-neutral shape report. Unrelated
+/// imports (WASI or any non-`component:media-url-resolver/*` import) are
+/// reported as `unprovided`, never silently rejected.
+pub fn component_shape(wasm: &[u8]) -> Result<ComponentShapeReport, String> {
+    let (imports, exports) = component_bindings(wasm)?;
+    let package_imports: Vec<String> = imports
+        .iter()
+        .filter(|name| name.starts_with(PACKAGE_PREFIX))
+        .cloned()
+        .collect();
+    let package_exports: Vec<String> = exports
+        .iter()
+        .filter(|name| name.starts_with(PACKAGE_PREFIX))
+        .cloned()
+        .collect();
+    let unprovided_imports: Vec<String> = imports
+        .iter()
+        .filter(|name| !name.starts_with(PACKAGE_PREFIX))
+        .cloned()
+        .collect();
+    Ok(ComponentShapeReport {
+        package_imports,
+        package_exports,
+        unprovided_imports,
+    })
+}
+
+/// Project an accepted revision into the policy-neutral shape it expects. The
+/// returned `AbiShape` is the shared skeleton the packer and the test-only
+/// host both bind against.
+pub fn accepted_shape(revision: &AcceptedRevision) -> AbiShape {
+    AbiShape {
+        package: revision.package,
+        version: revision.version,
+        world: revision.world,
+        wit_path: revision.wit_path,
+        package_imports: revision.import.into_iter().collect(),
+        package_exports: vec![revision.export],
+    }
+}
+
 /// Bind a built component to the accepted revision its manifest declared.
 /// Fails closed on any extra, missing, or substituted package-scoped
 /// import/export; unrelated host imports (e.g. WASI) are ignored.
 pub fn validate_component_revision(wasm: &[u8], revision: &AcceptedRevision) -> Result<(), String> {
-    let (imports, exports) = component_bindings(wasm)?;
-    let package_imports: Vec<_> = imports
-        .iter()
-        .filter(|name| name.starts_with(PACKAGE_PREFIX))
-        .collect();
-    let package_exports: Vec<_> = exports
-        .iter()
-        .filter(|name| name.starts_with(PACKAGE_PREFIX))
-        .collect();
-    let import_ok = match revision.import {
-        Some(expected) => package_imports.len() == 1 && package_imports[0] == expected,
-        None => package_imports.is_empty(),
-    };
-    let export_ok = package_exports.len() == 1 && package_exports[0] == revision.export;
+    let report = component_shape(wasm)?;
+    let expected = accepted_shape(revision);
+    let import_ok = report.package_imports == expected.package_imports;
+    let export_ok = report.package_exports == expected.package_exports;
     (import_ok && export_ok).then_some(()).ok_or_else(|| {
         format!(
             "component does not match accepted revision {}@{}",

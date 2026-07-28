@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "tools/factory-validator",
+  "tools/bex-test-host",
   "sdk/bex-media-url-resolver",
   "sdk/bex-media-url-resolver-v2",
   "plugins/direct-url",

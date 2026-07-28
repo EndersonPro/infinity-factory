@@ -1,4 +1,7 @@
-use factory_validator::{hex, pack_all, validate_archive};
+use factory_validator::{
+    AbiShape, ComponentShapeReport, V1, V2, accepted_for_manifest, accepted_shape, component_shape,
+    hex, pack_all, validate_archive,
+};
 use std::{
     fs,
     path::PathBuf,
@@ -244,5 +247,106 @@ fn rejects_mixed_archive_when_one_plugin_mismatches() {
         &component(&[], &[V2_EXPORT]), // missing required https-client import
     );
     assert!(pack_all(&root, &root.join("dist")).is_err());
+    fs::remove_dir_all(root).expect("cleanup must succeed");
+}
+
+#[test]
+fn component_shape_reports_exact_v1_and_v2_bindings() {
+    let v1 = component(&[], &[V1_EXPORT]);
+    let report = component_shape(&v1).expect("v1 shape must parse");
+    assert_eq!(report.package_imports, Vec::<String>::new());
+    assert_eq!(report.package_exports, vec![V1_EXPORT]);
+    assert!(
+        report.unprovided_imports.is_empty(),
+        "v1 has no unrelated imports"
+    );
+    let v2 = component(&[V2_IMPORT], &[V2_EXPORT]);
+    let report = component_shape(&v2).expect("v2 shape must parse");
+    assert_eq!(report.package_imports, vec![V2_IMPORT]);
+    assert_eq!(report.package_exports, vec![V2_EXPORT]);
+    assert!(
+        report.unprovided_imports.is_empty(),
+        "v2 https-client is package-scoped, not unprovided"
+    );
+}
+
+#[test]
+fn component_shape_reports_wasi_as_unprovided_without_rejecting() {
+    let wasm = component(&["wasi:cli/.OutputStream@0.2.3", V2_IMPORT], &[V2_EXPORT]);
+    let report = component_shape(&wasm).expect("wasi-bearing v2 must still parse");
+    assert_eq!(report.package_imports, vec![V2_IMPORT]);
+    // The inspector reports unrelated imports verbatim without rejecting them;
+    // WASI does not imply execution support and stays `unprovided`.
+    assert_eq!(
+        report.unprovided_imports,
+        vec!["wasi:cli/.OutputStream@0.2.3"]
+    );
+}
+
+#[test]
+fn accepted_shape_is_policy_neutral_and_derives_expected_bindings() {
+    let v1 = accepted_shape(&V1);
+    assert_eq!(v1.package_imports, Vec::<&'static str>::new());
+    assert_eq!(v1.package_exports, vec![V1_EXPORT]);
+    let v2 = accepted_shape(&V2);
+    assert_eq!(v2.package_imports, vec![V2_IMPORT]);
+    assert_eq!(v2.package_exports, vec![V2_EXPORT]);
+    // The neutral shape carries no policy identity; the host binds that itself.
+    assert!(
+        !v1.package_imports
+            .iter()
+            .any(|n| n.contains("https-client"))
+    );
+}
+
+#[test]
+fn component_shape_rejects_drift_through_neutral_inspection() {
+    let drifted = component(
+        &[V2_IMPORT],
+        &["component:media-url-resolver/resolver@9.0.0"],
+    );
+    let report = component_shape(&drifted).expect("drifted shape must still parse");
+    let v2 = accepted_shape(&V2);
+    assert_ne!(
+        report.package_exports, v2.package_exports,
+        "drifted export must not equal accepted"
+    );
+    let accepted = accepted_for_manifest(&serde_json::json!({
+        "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+        "network_policy": "instagram-public-v1",
+    }))
+    .expect("v2 manifest must resolve");
+    let _shape: AbiShape = accepted_shape(accepted);
+    let _report: ComponentShapeReport = component_shape(&drifted).expect("must parse");
+}
+
+#[test]
+fn pack_all_bytes_unchanged_after_neutral_shape_extraction() {
+    let root = root();
+    add_plugin(
+        &root,
+        "direct-url",
+        "direct_url",
+        &v1_manifest("a"),
+        &component(&[], &[V1_EXPORT]),
+    );
+    add_plugin(
+        &root,
+        "instagram",
+        "instagram",
+        &v2_manifest("b"),
+        &component(&[V2_IMPORT], &[V2_EXPORT]),
+    );
+    let first = root.join("first");
+    let second = root.join("second");
+    pack_all(&root, &first).expect("first pack must succeed");
+    pack_all(&root, &second).expect("second pack must succeed");
+    for name in ["a.bex", "b.bex", "bex-factory.json"] {
+        assert_eq!(
+            hex(&fs::read(first.join(name)).expect("first asset")),
+            hex(&fs::read(second.join(name)).expect("second asset")),
+            "{name} must be byte-reproducible across packs"
+        );
+    }
     fs::remove_dir_all(root).expect("cleanup must succeed");
 }

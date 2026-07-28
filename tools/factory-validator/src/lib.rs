@@ -10,7 +10,8 @@ use tar::{Builder, Header};
 
 mod revision;
 pub use revision::{
-    ACCEPTED, AcceptedRevision, V1, V2, accepted_for_manifest, validate_component_revision,
+    ACCEPTED, AbiShape, AcceptedRevision, ComponentShapeReport, V1, V2, accepted_for_manifest,
+    accepted_shape, component_shape, validate_component_revision,
 };
 
 pub const REQUIRED_ERRORS: [&str; 8] = [
