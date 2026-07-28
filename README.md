@@ -7,6 +7,7 @@ Rust/Wasm BEX plugin factory for typed media URL resolvers.
 - `wit/media-url-resolver/` — canonical WIT ABI.
 - `sdk/bex-media-url-resolver/` — guest SDK and export macro.
 - `plugins/direct-url/` — deterministic reference plugin.
+- `plugins/bandcamp/` — Bandcamp public track resolver (v2). Built and tested natively; **not** registered in `factory/bex-factory.json` or built by `scripts/build-plugins.sh` until the external host recognizes the `bandcamp-public-v1` network policy (see `plugins/bandcamp/README.md` and `compatibility/media-url-resolver-v2-bandcamp-host-contract.md`).
 - `tools/factory-validator/` — contract and fixture validation.
 - `compatibility/` and `fixtures/` — host handoff evidence.
 

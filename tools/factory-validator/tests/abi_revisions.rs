@@ -188,6 +188,19 @@ fn resolves_an_exact_v2_manifest_and_rejects_unknown_or_mismatched_ones() {
 }
 
 #[test]
+fn rejects_bandcamp_manifest_until_host_policy_support() {
+    // The bandcamp plugin declares `bandcamp-public-v1`, which the external
+    // host does not yet recognize (recorded in WU0). The revision table keeps
+    // failing closed so the plugin cannot be accidentally packaged/registered
+    // until the external host contract is updated to accept the policy.
+    let bandcamp = serde_json::json!({
+        "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+        "network_policy": "bandcamp-public-v1",
+    });
+    assert!(accepted_for_manifest(&bandcamp).is_err());
+}
+
+#[test]
 fn rejects_policy_identity_drift() {
     let source: Value =
         serde_json::from_str(&read("compatibility/media-url-resolver-v2-policy.json"))

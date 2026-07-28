@@ -71,6 +71,57 @@ fn validates_exact_get_policy() {
     assert!(validate_get_request(&forbidden).is_err());
 }
 #[test]
+fn validates_exact_bandcamp_get_policy() {
+    assert!(
+        validate_get_request(&get(
+            "https://relapsealumni.bandcamp.com/track/hail-to-fire"
+        ))
+        .is_ok()
+    );
+    assert!(validate_get_request(&get("https://a.bandcamp.com/track/x")).is_ok());
+    for url in [
+        "http://a.bandcamp.com/track/x",
+        "https://www.bandcamp.com/track/x",
+        "https://bandcamp.com/track/x",
+        "https://a.bandcamp.com/album/x",
+        "https://a.bandcamp.com/track/",
+        "https://a.bandcamp.com/track/x?q=1",
+        "https://a.bandcamp.com/track/x#f",
+        "https://user@a.bandcamp.com/track/x",
+        "https://a.bandcamp.com:443/track/x",
+        "https://a.bandcamp.com/track/x/extra",
+        "https://A.bandcamp.com/track/x",
+        "https://a.bandcamp.com/track/X",
+        "https://a-.bandcamp.com/track/x",
+        "https://evil.bandcamp.com.example/track/x",
+        "https://a.bandcamp.com.example.org/track/x",
+    ] {
+        assert!(validate_get_request(&get(url)).is_err(), "accepted {url}");
+    }
+}
+
+#[test]
+fn validates_bandcamp_final_url_in_response() {
+    let mut response = HttpsResponse {
+        status: 200,
+        final_url: "https://a.bandcamp.com/track/x".into(),
+        headers: vec![Header {
+            name: "content-type".into(),
+            value: "text/html".into(),
+        }],
+        body: b"ok".to_vec(),
+    };
+    assert!(validate_https_response(&response).is_ok());
+    response.final_url = "https://other.bandcamp.com/track/y".into();
+    assert!(validate_https_response(&response).is_ok());
+    // off-origin redirect to a non-page host is rejected
+    response.final_url = "https://t4.bcbits.com/stream/abc".into();
+    assert!(validate_https_response(&response).is_err());
+    response.final_url = "https://evil.example/track/x".into();
+    assert!(validate_https_response(&response).is_err());
+}
+
+#[test]
 fn validates_graphql_and_response_boundaries() {
     assert!(validate_public_graphql_request(&post()).is_ok());
     let mut invalid = post();

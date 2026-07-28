@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "id": "bandcamp-public-v1",
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver",
+    "wit_sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5"
+  },
+  "operations": ["get"],
+  "allowed_hosts": ["*.bandcamp.com"],
+  "get_path_families": ["track"],
+  "get_headers": [],
+  "media_hosts": ["*.bcbits.com"],
+  "thumbnail_hosts": ["f4.bcbits.com"],
+  "response_headers": [
+    "cache-control", "content-length", "content-type", "etag",
+    "last-modified", "retry-after"
+  ],
+  "limits": {
+    "url_bytes": 2048,
+    "artist_label_bytes": 63,
+    "slug_bytes": 128,
+    "get_headers": 0,
+    "response_body_bytes": 4194304,
+    "tralbum_encoded_bytes": 1048576,
+    "tralbum_decoded_bytes": 1048576,
+    "json_depth": 32,
+    "json_members_and_elements": 512,
+    "json_string_bytes": 4096,
+    "trackinfo_entries": 16,
+    "file_entries": 16,
+    "format_id_bytes": 32,
+    "candidates": 16,
+    "deadline_ms": 10000,
+    "redirects": 3
+  },
+  "same_origin_redirects": true,
+  "redacted": [
+    "authorization", "cookie", "set-cookie", "response-body",
+    "trackinfo-token", "media-url-query", "transport-diagnostics"
+  ],
+  "excluded_workflows": [
+    "albums", "discographies", "radio", "embeds", "private-content",
+    "free-download", "statdownload", "purchases", "login", "cookies",
+    "browser-automation", "hls", "dash", "drm", "media-downloading",
+    "redistribution-rights"
+  ]
+}

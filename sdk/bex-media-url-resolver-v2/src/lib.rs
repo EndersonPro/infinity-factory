@@ -66,6 +66,21 @@ fn response_error() -> ResolverError {
         "HTTPS response violates compatibility policy",
     )
 }
+fn instagram_authority(authority: &str) -> bool {
+    matches!(authority, "instagram.com" | "www.instagram.com")
+}
+fn bandcamp_artist(authority: &str) -> Option<&str> {
+    authority.strip_suffix(".bandcamp.com").filter(|label| {
+        !label.is_empty()
+            && *label != "www"
+            && label.len() <= 63
+            && label
+                .bytes()
+                .all(|value| value.is_ascii_lowercase() || value.is_ascii_digit() || value == b'-')
+            && !label.starts_with('-')
+            && !label.ends_with('-')
+    })
+}
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
         return None;
@@ -81,7 +96,7 @@ fn parsed_https(value: &str) -> Option<Url> {
         && parsed.port().is_none()
         && parsed.fragment().is_none()
         && parsed.host_str() == Some(authority)
-        && matches!(authority, "instagram.com" | "www.instagram.com"))
+        && (instagram_authority(authority) || bandcamp_artist(authority).is_some()))
     .then_some(parsed)
 }
 fn valid_get_url(value: &str) -> bool {
@@ -91,16 +106,30 @@ fn valid_get_url(value: &str) -> bool {
     if url.query().is_some() {
         return false;
     }
-    let parts: Vec<_> = url.path().split('/').collect();
-    parts.len() == 4
-        && parts[0].is_empty()
-        && matches!(parts[1], "p" | "reel" | "reels" | "tv")
-        && !parts[2].is_empty()
-        && parts[2].len() <= 64
-        && parts[2]
-            .bytes()
-            .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
-        && parts[3].is_empty()
+    let authority = url.host_str().unwrap_or("");
+    let parts: Vec<&str> = url.path().split('/').collect();
+    if instagram_authority(authority) {
+        parts.len() == 4
+            && parts[0].is_empty()
+            && matches!(parts[1], "p" | "reel" | "reels" | "tv")
+            && !parts[2].is_empty()
+            && parts[2].len() <= 64
+            && parts[2]
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
+            && parts[3].is_empty()
+    } else if bandcamp_artist(authority).is_some() {
+        parts.len() == 3
+            && parts[0].is_empty()
+            && parts[1] == "track"
+            && !parts[2].is_empty()
+            && parts[2].len() <= 128
+            && parts[2]
+                .bytes()
+                .all(|value| value.is_ascii_lowercase() || value.is_ascii_digit() || value == b'-')
+    } else {
+        false
+    }
 }
 fn valid_headers(headers: &[Header], response: bool) -> bool {
     let (count, name, value, combined) = if response {

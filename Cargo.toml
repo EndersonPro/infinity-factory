@@ -5,6 +5,7 @@ members = [
   "sdk/bex-media-url-resolver-v2",
   "plugins/direct-url",
   "plugins/instagram",
+  "plugins/bandcamp",
 ]
 resolver = "2"
 
