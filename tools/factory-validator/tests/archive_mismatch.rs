@@ -109,6 +109,31 @@ fn packages_exact_v1_legacy_manifest_reproducibly() {
 }
 
 #[test]
+fn packages_component_built_for_wasip1() {
+    let root = root();
+    add_plugin(
+        &root,
+        "direct-url",
+        "direct_url",
+        &v1_manifest("test.direct-url"),
+        &component(&[], &[V1_EXPORT]),
+    );
+    let wasip1 = root.join("target/wasm32-wasip1/release/direct_url.wasm");
+    fs::create_dir_all(wasip1.parent().expect("wasip1 path must have a parent"))
+        .expect("wasip1 target directory must be created");
+    fs::rename(
+        root.join("target/wasm32-wasip2/release/direct_url.wasm"),
+        &wasip1,
+    )
+    .expect("component must be moved to wasip1 target");
+
+    let output = root.join("dist");
+    pack_all(&root, &output).expect("wasip1 component must package");
+    validate_archive(&output.join("direct-url.bex")).expect("archive must validate");
+    fs::remove_dir_all(root).expect("cleanup must succeed");
+}
+
+#[test]
 fn packages_exact_v2_manifest_with_declared_abi_and_policy() {
     let root = root();
     add_plugin(

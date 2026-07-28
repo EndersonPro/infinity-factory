@@ -311,7 +311,7 @@ pub fn pack_all(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
             .ok_or("plugin path has no directory name")?
             .to_string_lossy()
             .replace('-', "_");
-        let wasm = ["wasm32-unknown-unknown", "wasm32-wasip2"]
+        let wasm = ["wasm32-unknown-unknown", "wasm32-wasip1", "wasm32-wasip2"]
             .into_iter()
             .map(|target| {
                 root.join("target")
