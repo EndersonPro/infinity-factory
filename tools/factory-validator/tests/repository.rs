@@ -42,6 +42,45 @@ fn repository_manifest_and_workflows_are_safe() {
 }
 
 #[test]
+fn runtime_repository_feed_matches_the_release_catalog_asset() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let feed: Value = serde_json::from_slice(
+        &fs::read(root.join("repository.json")).expect("runtime repository feed must exist"),
+    )
+    .expect("runtime repository feed must be valid JSON");
+
+    let repositories = feed["repositories"]
+        .as_array()
+        .expect("repositories must be an array");
+    assert_eq!(repositories.len(), 1);
+    assert_eq!(feed.as_object().map(|object| object.len()), Some(1));
+
+    let repository = &repositories[0];
+    assert_eq!(repository.as_object().map(|object| object.len()), Some(4));
+    assert_eq!(repository["id"], 1);
+    assert_eq!(repository["name"], "infinity-factory");
+    assert_eq!(repository["install"], true);
+
+    let catalog_url = repository["url"]
+        .as_str()
+        .expect("repository URL must be a string");
+    assert_eq!(
+        catalog_url,
+        "https://github.com/EndersonPro/infinity-factory/releases/latest/download/bex-factory.json"
+    );
+    assert!(catalog_url.contains("github.com/EndersonPro/infinity-factory/"));
+    let catalog_name = catalog_url
+        .rsplit('/')
+        .next()
+        .expect("catalog URL must include an asset name");
+    assert_eq!(catalog_name, "bex-factory.json");
+
+    let release_workflow = fs::read_to_string(root.join(".github/workflows/release.yml"))
+        .expect("release workflow must exist");
+    assert!(release_workflow.contains("dist/bex-factory.json repository.json"));
+}
+
+#[test]
 fn source_factory_binds_package_and_wit() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let index: Value = serde_json::from_slice(

@@ -1,0 +1,10 @@
+{
+  "repositories": [
+    {
+      "id": 1,
+      "name": "infinity-factory",
+      "url": "https://github.com/EndersonPro/infinity-factory/releases/latest/download/bex-factory.json",
+      "install": true
+    }
+  ]
+}

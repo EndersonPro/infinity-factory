@@ -31,6 +31,20 @@ Rust/Wasm BEX plugin factory for typed media URL resolvers.
 
 The command builds Wasm components, packages every plugin without skipping failures, validates each zstd-tar archive, requires at least one `.bex`, and writes `dist/bex-factory.json`.
 
+## Runtime repository feed
+
+Use this stable runtime registry URL:
+
+```text
+https://github.com/EndersonPro/infinity-factory/releases/latest/download/repository.json
+```
+
+It points clients to the latest release's `bex-factory.json` catalog.
+
+## Releases
+
+Pushing a `v*` tag triggers the release workflow. The workflow checks and builds plugins, then publishes the `.bex` packages, `bex-factory.json`, and `repository.json`. Manual runs require a non-empty `v`-prefixed tag and refuse to modify an existing release.
+
 ## Create a plugin
 
 1. Add a crate under `plugins/<name>/` with `crate-type = ["cdylib", "rlib"]`.
