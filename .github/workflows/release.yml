@@ -29,9 +29,12 @@ jobs:
       - name: Install pinned component tooling
         run: cargo install cargo-component --version 0.21.1 --locked
       - run: ./scripts/check.sh
-      - run: ./scripts/build-plugins.sh
+      - name: Build and validate plugin sources
+        run: ./scripts/build-plugins.sh
         env:
           ALLOW_WASIP2_FALLBACK: "0"
+      - name: Stage canonical tracked release assets
+        run: ./scripts/stage-release-assets.sh
       - name: Publish immutable assets
         env:
           GH_TOKEN: ${{ github.token }}

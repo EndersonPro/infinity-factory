@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-: "${OUTPUT_DIR:=dist}"
+: "${OUTPUT_DIR:=target/source-package-validation}"
 command -v cargo-component >/dev/null || {
 	echo 'cargo-component is required (0.21.1)' >&2
 	exit 1
@@ -29,4 +29,4 @@ test "$count" -ge 1 || {
 	echo 'No .bex package was produced' >&2
 	exit 1
 }
-echo "Built $count plugin package(s) in $OUTPUT_DIR"
+echo "Validated source build for $count plugin package(s) in $OUTPUT_DIR"
