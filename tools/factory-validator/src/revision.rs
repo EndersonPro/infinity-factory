@@ -14,9 +14,9 @@ pub struct AcceptedRevision {
     /// the revision must have zero `component:media-url-resolver/*` imports.
     pub import: Option<&'static str>,
     pub export: &'static str,
-    /// Exact `network_policy` manifest field the revision requires, or
-    /// `None` when the revision carries no host network policy.
-    pub network_policy: Option<&'static str>,
+    /// Exact `network_policy` manifest fields accepted for this revision.
+    /// An empty list means the revision carries no host network policy.
+    pub network_policies: &'static [&'static str],
 }
 
 pub static V1: AcceptedRevision = AcceptedRevision {
@@ -26,7 +26,7 @@ pub static V1: AcceptedRevision = AcceptedRevision {
     wit_path: "wit/media-url-resolver/wit/media-url-resolver.wit",
     import: None,
     export: "component:media-url-resolver/resolver@1.0.0",
-    network_policy: None,
+    network_policies: &[],
 };
 
 pub static V2: AcceptedRevision = AcceptedRevision {
@@ -36,7 +36,7 @@ pub static V2: AcceptedRevision = AcceptedRevision {
     wit_path: "wit/media-url-resolver-v2/wit/media-url-resolver.wit",
     import: Some("component:media-url-resolver/https-client@2.0.0"),
     export: "component:media-url-resolver/resolver@2.0.0",
-    network_policy: Some("instagram-public-v1"),
+    network_policies: &["instagram-public-v1", "bandcamp-public-v1"],
 };
 
 /// Every revision the packer accepts. Fail closed: any manifest, package,
@@ -68,13 +68,13 @@ pub fn accepted_for_manifest(manifest: &Value) -> Result<&'static AcceptedRevisi
         .into_iter()
         .find(|item| item.package == package && item.version == version && item.world == world)
         .ok_or_else(|| format!("unknown ABI revision {package}@{version} world {world}"))?;
-    if let Some(expected) = revision.network_policy {
+    if !revision.network_policies.is_empty() {
         let declared = manifest["network_policy"]
             .as_str()
             .ok_or("manifest network_policy missing")?;
-        if declared != expected {
+        if !revision.network_policies.contains(&declared) {
             return Err(format!(
-                "network_policy {declared} does not match accepted {expected}"
+                "network_policy {declared} is not accepted for {package}@{version}"
             ));
         }
     }
@@ -201,6 +201,16 @@ mod tests {
             "network_policy": "instagram-public-v1",
         });
         let revision = accepted_for_manifest(&manifest).expect("exact v2 manifest must resolve");
+        assert_eq!(revision.version, "2.0.0");
+    }
+
+    #[test]
+    fn accepts_exact_v2_bandcamp_policy() {
+        let manifest = serde_json::json!({
+            "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+            "network_policy": "bandcamp-public-v1",
+        });
+        let revision = accepted_for_manifest(&manifest).expect("Bandcamp v2 policy must resolve");
         assert_eq!(revision.version, "2.0.0");
     }
 

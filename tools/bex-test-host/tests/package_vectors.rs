@@ -68,6 +68,20 @@ fn inspect_real_instagram_package_with_catalog_succeeds() {
 }
 
 #[test]
+fn inspect_real_bandcamp_package_with_catalog_succeeds() {
+    let report =
+        inspect_package(&pkg("bandcamp.bex"), Some(&catalog())).expect("Bandcamp must inspect");
+    let result = report.result.expect("success must carry result");
+    assert_eq!(result.package.version, "2");
+    assert_eq!(
+        result.package.network_policy.as_deref(),
+        Some("bandcamp-public-v1")
+    );
+    assert_eq!(result.package.wit.sha256, package::canonical_v2_digest());
+    assert_eq!(result.package.asset_name, "bandcamp.bex");
+}
+
+#[test]
 fn catalog_is_optional_for_validate() {
     assert!(validate_package(&pkg("instagram.bex"), None).is_ok());
     assert!(validate_package(&pkg("instagram.bex"), Some(&catalog())).is_ok());
@@ -182,7 +196,7 @@ fn catalog_rejects_zero_or_multiple_matches() {
     let mut value: serde_json::Value =
         serde_json::from_slice(&std::fs::read(catalog()).expect("catalog must read"))
             .expect("catalog must parse");
-    value["plugins"][1]["asset_sha256"] = json!("0".repeat(64));
+    value["plugins"][2]["asset_sha256"] = json!("0".repeat(64));
     let path = std::env::temp_dir().join("bex-bad-catalog.json");
     std::fs::write(&path, value.to_string()).expect("write must succeed");
     assert_eq!(
@@ -197,7 +211,7 @@ fn catalog_rejects_when_no_entry_matches_the_id() {
     let mut value: serde_json::Value =
         serde_json::from_slice(&std::fs::read(catalog()).expect("catalog must read"))
             .expect("catalog must parse");
-    value["plugins"][1]["id"] = json!("media-url-resolver.infinity-factory.bandcamp");
+    value["plugins"][2]["id"] = json!("media-url-resolver.infinity-factory.missing");
     let path = std::env::temp_dir().join("bex-zero-match.json");
     std::fs::write(&path, value.to_string()).expect("write must succeed");
     assert_eq!(
@@ -226,7 +240,7 @@ fn catalog_rejects_duplicate_plugin_ids() {
     let mut value: serde_json::Value =
         serde_json::from_slice(&std::fs::read(catalog()).expect("catalog must read"))
             .expect("catalog must parse");
-    let duplicate = value["plugins"][1].clone();
+    let duplicate = value["plugins"][2].clone();
     value["plugins"].as_array_mut().unwrap().push(duplicate);
     let path = std::env::temp_dir().join("bex-duplicate.json");
     std::fs::write(&path, value.to_string()).expect("write must succeed");
