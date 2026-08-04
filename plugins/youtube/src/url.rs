@@ -50,7 +50,10 @@ pub fn classify_url(source: &str) -> Result<VideoId, UrlError> {
         return Err(UrlError::Invalid);
     }
     let (authority, path_and_query) = rest.split_once('/').ok_or(UrlError::Invalid)?;
-    let candidate = if matches!(authority, "www.youtube.com" | "youtube.com" | "m.youtube.com") {
+    let candidate = if matches!(
+        authority,
+        "www.youtube.com" | "youtube.com" | "m.youtube.com"
+    ) {
         let (path, query) = path_and_query
             .split_once('?')
             .map_or((path_and_query, None), |(path, query)| (path, Some(query)));

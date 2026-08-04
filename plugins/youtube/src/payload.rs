@@ -161,7 +161,9 @@ pub(crate) fn select(player_response: &Value, video_id: &str) -> Result<Selectio
         // future/unknown): treat as unavailable rather than a parse failure.
         _ => return Err(error::unavailable()),
     }
-    let details = player_response.get("videoDetails").and_then(Value::as_object);
+    let details = player_response
+        .get("videoDetails")
+        .and_then(Value::as_object);
     let title = bounded_string(details.and_then(|d| d.get("title")), TITLE_LIMIT)?;
     let author = bounded_string(details.and_then(|d| d.get("author")), AUTHOR_LIMIT)?;
     let duration_ms = details
@@ -186,7 +188,9 @@ pub(crate) fn select(player_response: &Value, video_id: &str) -> Result<Selectio
         })
         .filter(|url| safe_https(url))
         .or_else(|| Some(format!("https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")));
-    let streaming = player_response.get("streamingData").and_then(Value::as_object);
+    let streaming = player_response
+        .get("streamingData")
+        .and_then(Value::as_object);
     let progressive = parse_format_array(streaming.and_then(|s| s.get("formats")))?;
     let adaptive = parse_format_array(streaming.and_then(|s| s.get("adaptiveFormats")))?;
     Ok(Selection {

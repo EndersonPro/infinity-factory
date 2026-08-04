@@ -18,10 +18,7 @@ pub fn parse_and_map(
     let ops = if selection.needs_cipher() {
         let js_body = player_js_body.ok_or_else(error::malformed)?;
         let js_text = std::str::from_utf8(js_body).map_err(|_| error::malformed())?;
-        Some(
-            crate::cipher::extract_cipher_ops(js_text)
-                .map_err(|_| error::malformed())?,
-        )
+        Some(crate::cipher::extract_cipher_ops(js_text).map_err(|_| error::malformed())?)
     } else {
         None
     };
@@ -49,7 +46,10 @@ pub fn resolve_public(
     let page_state = page::extract(&watch.body).map_err(|_| error::malformed())?;
     let selection = payload::select(&page_state.player_response, id.as_str())?;
     let ops = if selection.needs_cipher() {
-        let js_url = page_state.player_js_url.clone().ok_or_else(error::malformed)?;
+        let js_url = page_state
+            .player_js_url
+            .clone()
+            .ok_or_else(error::malformed)?;
         let js_response = client
             .get(GetRequest {
                 url: js_url,
@@ -59,10 +59,7 @@ pub fn resolve_public(
         validate_https_response(&js_response).map_err(|_| error::malformed())?;
         error::status(js_response.status)?;
         let js_text = std::str::from_utf8(&js_response.body).map_err(|_| error::malformed())?;
-        Some(
-            crate::cipher::extract_cipher_ops(js_text)
-                .map_err(|_| error::malformed())?,
-        )
+        Some(crate::cipher::extract_cipher_ops(js_text).map_err(|_| error::malformed())?)
     } else {
         None
     };

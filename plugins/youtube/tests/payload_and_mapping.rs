@@ -89,8 +89,20 @@ fn maps_direct_adaptive_pair_as_separated_mp4() {
     let response = parse_and_map(&watch_html(ADAPTIVE_DIRECT_MP4, None), ID, None).unwrap();
     match response.resolution {
         Resolution::Separated(pair) => {
-            assert!(pair.audio.mime_type.as_deref().unwrap().starts_with("audio/"));
-            assert!(pair.video.mime_type.as_deref().unwrap().starts_with("video/"));
+            assert!(
+                pair.audio
+                    .mime_type
+                    .as_deref()
+                    .unwrap()
+                    .starts_with("audio/")
+            );
+            assert!(
+                pair.video
+                    .mime_type
+                    .as_deref()
+                    .unwrap()
+                    .starts_with("video/")
+            );
             assert_eq!(pair.mux_plan.container, MuxContainer::Mp4);
             assert!(pair.mux_plan.prefer_stream_copy);
         }

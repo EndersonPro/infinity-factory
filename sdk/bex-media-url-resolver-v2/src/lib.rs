@@ -111,11 +111,12 @@ fn parsed_https(value: &str) -> Option<Url> {
 /// 11-character YouTube video id, and nothing else (no other params, no
 /// repeated `v`, no trailing junk after the id).
 fn valid_watch_query(query: &str) -> bool {
-    query
-        .strip_prefix("v=")
-        .is_some_and(|id| id.len() == 11 && id.bytes().all(|value| {
-            value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-')
-        }))
+    query.strip_prefix("v=").is_some_and(|id| {
+        id.len() == 11
+            && id
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
+    })
 }
 /// Exact player-JS asset path shape: `/s/player/{hash}/{variant}/{locale}/base.js`.
 /// This is the only non-watch GET the plugin issues, needed to fetch YouTube's

@@ -117,10 +117,7 @@ fn accepts_youtu_be_and_shorts_inputs_but_always_fetches_the_canonical_watch_url
 
 #[test]
 fn rejects_invalid_source_with_zero_host_calls() {
-    let mut client = MockHttpsClient::new(vec![get(
-        WATCH_URL,
-        Err(HttpsError::TransportFailure),
-    )]);
+    let mut client = MockHttpsClient::new(vec![get(WATCH_URL, Err(HttpsError::TransportFailure))]);
     let error = resolve_public(&mut client, "https://evil.example/watch?v=x").unwrap_err();
     assert_eq!(error.kind, ResolverErrorKind::InvalidInput);
     assert!(client.observations().is_empty());

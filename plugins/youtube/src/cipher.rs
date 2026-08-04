@@ -71,20 +71,20 @@ impl CipherOps {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn extract_cipher_ops(js: &str) -> Result<CipherOps, String> {
-    if let Ok(ops) = extract_cipher_ops_packed_pool(js) {
-        if !ops.is_empty() {
-            return Ok(CipherOps(ops));
-        }
+    if let Ok(ops) = extract_cipher_ops_packed_pool(js)
+        && !ops.is_empty()
+    {
+        return Ok(CipherOps(ops));
     }
-    if let Ok(ops) = extract_cipher_ops_youtubeexplode(js) {
-        if !ops.is_empty() {
-            return Ok(CipherOps(ops));
-        }
+    if let Ok(ops) = extract_cipher_ops_youtubeexplode(js)
+        && !ops.is_empty()
+    {
+        return Ok(CipherOps(ops));
     }
-    if let Ok(ops) = extract_cipher_ops_fq(js) {
-        if !ops.is_empty() {
-            return Ok(CipherOps(ops));
-        }
+    if let Ok(ops) = extract_cipher_ops_fq(js)
+        && !ops.is_empty()
+    {
+        return Ok(CipherOps(ops));
     }
     extract_cipher_ops_legacy(js).map(CipherOps)
 }
@@ -163,16 +163,15 @@ fn find_packed_pool(js: &str) -> Option<(String, Vec<String>)> {
         };
         let name = js[name_start..name_start + eq_rel].trim();
         let value_start = name_start + eq_rel + 1;
-        if !name.is_empty() && name.chars().all(is_ident_char) {
-            if let Some(literal) = js[value_start..].trim_start().strip_prefix('\'') {
-                if let Some(end) = find_unescaped_quote(literal, '\'') {
-                    let value = &literal[..end];
-                    let tokens: Vec<String> = value.split('{').map(str::to_string).collect();
-                    if tokens.iter().any(|t| t == "splice") && tokens.iter().any(|t| t == "reverse")
-                    {
-                        return Some((name.to_string(), tokens));
-                    }
-                }
+        if !name.is_empty()
+            && name.chars().all(is_ident_char)
+            && let Some(literal) = js[value_start..].trim_start().strip_prefix('\'')
+            && let Some(end) = find_unescaped_quote(literal, '\'')
+        {
+            let value = &literal[..end];
+            let tokens: Vec<String> = value.split('{').map(str::to_string).collect();
+            if tokens.iter().any(|t| t == "splice") && tokens.iter().any(|t| t == "reverse") {
+                return Some((name.to_string(), tokens));
             }
         }
         offset = name_start;
@@ -222,12 +221,12 @@ fn find_pool_indexed_helper(
             && js[value_start..].trim_start().starts_with('{')
         {
             let brace_start = value_start + js[value_start..].find('{').unwrap();
-            if let Some(body) = find_matching_brace(js, brace_start) {
-                if body.contains(&marker) {
-                    let methods = classify_pool_helper_methods(&body, pool_name);
-                    if methods.len() == 3 {
-                        return Some((name.to_string(), methods));
-                    }
+            if let Some(body) = find_matching_brace(js, brace_start)
+                && body.contains(&marker)
+            {
+                let methods = classify_pool_helper_methods(&body, pool_name);
+                if methods.len() == 3 {
+                    return Some((name.to_string(), methods));
                 }
             }
         }
@@ -242,7 +241,7 @@ fn classify_pool_helper_methods(body: &str, pool_name: &str) -> HashMap<String, 
     while let Some(local) = body[pos..].find(":function(") {
         let colon_pos = pos + local;
         let key = body[..colon_pos]
-            .rsplit(|c: char| c == ',' || c == '{' || c == '\n')
+            .rsplit([',', '{', '\n'])
             .next()
             .unwrap_or("")
             .trim();
@@ -302,8 +301,7 @@ fn find_dispatch_calls(js: &str, helper_name: &str, pool_name: &str) -> Option<V
         // Two closing brackets precede the call parens: one for `pool[...]`,
         // one for the outer `helper[...]` that wraps it.
         let after = &js[expr_start + close_bracket_rel + 1..];
-        let (Some((ident, konst)), Some(rest)) =
-            (parse_xor_expr(expr), after.strip_prefix("]("))
+        let (Some((ident, konst)), Some(rest)) = (parse_xor_expr(expr), after.strip_prefix("]("))
         else {
             continue;
         };
@@ -311,7 +309,12 @@ fn find_dispatch_calls(js: &str, helper_name: &str, pool_name: &str) -> Option<V
             continue;
         };
         let args = &rest[..close_paren_rel];
-        let second_arg = args.splitn(2, ',').nth(1).unwrap_or("").trim().to_string();
+        let second_arg = args
+            .split_once(',')
+            .map(|x| x.1)
+            .unwrap_or("")
+            .trim()
+            .to_string();
         hits.push((ident, konst, second_arg));
     }
     if hits.len() < 2 {
@@ -321,7 +324,11 @@ fn find_dispatch_calls(js: &str, helper_name: &str, pool_name: &str) -> Option<V
     for (ident, _, _) in &hits {
         *counts.entry(ident.as_str()).or_insert(0) += 1;
     }
-    let majority_ident = counts.into_iter().max_by_key(|(_, count)| *count)?.0.to_string();
+    let majority_ident = counts
+        .into_iter()
+        .max_by_key(|(_, count)| *count)?
+        .0
+        .to_string();
     let calls: Vec<DispatchCall> = hits
         .into_iter()
         .filter(|(ident, _, _)| *ident == majority_ident)
@@ -400,13 +407,10 @@ fn extract_cipher_ops_youtubeexplode(js: &str) -> Result<Vec<CipherOp>, String> 
     }
     let mut ops = Vec::new();
     for statement in cipher_callsite.split(';') {
-        if let Some((_, method_name, index)) = parse_container_call(statement, &split_var) {
-            if let Some(kind) = method_types.get(method_name) {
-                ops.push(CipherOp {
-                    kind: *kind,
-                    index,
-                });
-            }
+        if let Some((_, method_name, index)) = parse_container_call(statement, &split_var)
+            && let Some(kind) = method_types.get(method_name)
+        {
+            ops.push(CipherOp { kind: *kind, index });
         }
     }
     if ops.is_empty() {
@@ -421,13 +425,13 @@ fn find_cipher_callsite(js: &str) -> Option<String> {
         let func_pos = offset + local;
         let body_open = js[func_pos..].find('{').map(|p| func_pos + p)?;
         let body = find_matching_brace(js, body_open)?;
-        if let Some(var_name) = extract_split_var_name(&body) {
-            if body.contains(".split(\"\")") || body.contains(".split('')") {
-                let return_join1 = format!("return {var_name}.join(\"\")");
-                let return_join2 = format!("return {var_name}.join('')");
-                if body.contains(&return_join1) || body.contains(&return_join2) {
-                    return Some(body);
-                }
+        if let Some(var_name) = extract_split_var_name(&body)
+            && (body.contains(".split(\"\")") || body.contains(".split('')"))
+        {
+            let return_join1 = format!("return {var_name}.join(\"\")");
+            let return_join2 = format!("return {var_name}.join('')");
+            if body.contains(&return_join1) || body.contains(&return_join2) {
+                return Some(body);
             }
         }
         offset = body_open + 1;
@@ -511,28 +515,28 @@ fn classify_cipher_methods_youtubeexplode(definition: &str) -> HashMap<String, C
         let fn_pos = pos + local;
         let before = &definition[..fn_pos];
         let method_name = before
-            .rsplit(|c: char| c == ',' || c == '{' || c == '\n' || c == ';')
+            .rsplit([',', '{', '\n', ';'])
             .next()
             .unwrap_or("")
             .trim();
         let body_open = definition[fn_pos..].find('{').map(|i| fn_pos + i);
-        if let Some(body_open) = body_open {
-            if let Some(body) = find_matching_brace(definition, body_open) {
-                let kind = if body.contains('%') {
-                    Some(CipherKind::Swap)
-                } else if body.contains("splice") {
-                    Some(CipherKind::Splice)
-                } else if body.contains("reverse") {
-                    Some(CipherKind::Reverse)
-                } else {
-                    None
-                };
-                if let (Some(kind), false) = (kind, method_name.is_empty()) {
-                    methods.insert(method_name.to_string(), kind);
-                }
-                pos = body_open + body.len() + 2;
-                continue;
+        if let Some(body_open) = body_open
+            && let Some(body) = find_matching_brace(definition, body_open)
+        {
+            let kind = if body.contains('%') {
+                Some(CipherKind::Swap)
+            } else if body.contains("splice") {
+                Some(CipherKind::Splice)
+            } else if body.contains("reverse") {
+                Some(CipherKind::Reverse)
+            } else {
+                None
+            };
+            if let (Some(kind), false) = (kind, method_name.is_empty()) {
+                methods.insert(method_name.to_string(), kind);
             }
+            pos = body_open + body.len() + 2;
+            continue;
         }
         pos = fn_pos + 1;
     }
@@ -607,10 +611,10 @@ fn extract_bracketed_text(s: &str, open: char, close: char) -> Option<String> {
             depth += 1;
         } else if c == close {
             depth -= 1;
-            if depth == 0 {
-                if let Some(s_idx) = start {
-                    return Some(chars[s_idx + 1..i].iter().collect());
-                }
+            if depth == 0
+                && let Some(s_idx) = start
+            {
+                return Some(chars[s_idx + 1..i].iter().collect());
             }
         }
     }
@@ -676,7 +680,7 @@ fn extract_uc_methods(
     while let Some(fn_pos) = search.find(":function(") {
         let before = &search[..fn_pos];
         let name_start = before
-            .rfind(|c: char| c == ',' || c == '{' || c == '\n' || c == ';')
+            .rfind([',', '{', '\n', ';'])
             .map(|p| p + 1)
             .unwrap_or(0);
         let name = before[name_start..].trim();
@@ -754,20 +758,15 @@ fn find_fq_cipher_call(js: &str) -> Option<usize> {
 
 fn is_fq_cipher_call(slice: &str) -> bool {
     let after_fq = &slice[3..];
-    if let Some((_, rest1)) = parse_number(after_fq) {
-        if rest1.starts_with(',') {
-            if let Some((_, rest3)) = parse_number(&rest1[1..]) {
-                if rest3.starts_with(",fQ(") {
-                    if let Some((_, rest5)) = parse_number(&rest3[4..]) {
-                        if rest5.starts_with(',') {
-                            if let Some((_, rest7)) = parse_number(&rest5[1..]) {
-                                return rest7.starts_with(",m.s)");
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    if let Some((_, rest1)) = parse_number(after_fq)
+        && rest1.starts_with(',')
+        && let Some((_, rest3)) = parse_number(&rest1[1..])
+        && rest3.starts_with(",fQ(")
+        && let Some((_, rest5)) = parse_number(&rest3[4..])
+        && rest5.starts_with(',')
+        && let Some((_, rest7)) = parse_number(&rest5[1..])
+    {
+        return rest7.starts_with(",m.s)");
     }
     false
 }
@@ -897,7 +896,7 @@ fn classify_helper_methods_legacy(
     while pos < obj_body.len() {
         if let Some(colon_pos) = obj_body[pos..].find(":function(") {
             let name_start = obj_body[..pos + colon_pos]
-                .rfind(|c: char| c == ',' || c == '{' || c == '\n')
+                .rfind([',', '{', '\n'])
                 .map(|p| p + 1)
                 .unwrap_or(pos);
             let method_name = obj_body[name_start..pos + colon_pos].trim().to_string();
@@ -954,10 +953,7 @@ fn parse_cipher_calls_legacy(
                         .nth(1)
                         .and_then(|s| s.trim().parse::<usize>().ok())
                         .unwrap_or(0);
-                    ops.push(CipherOp {
-                        kind: *kind,
-                        index,
-                    });
+                    ops.push(CipherOp { kind: *kind, index });
                 }
             }
         }
@@ -997,12 +993,13 @@ fn percent_decode(input: &str) -> String {
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let Ok(value) = u8::from_str_radix(&input[i + 1..i + 3], 16) {
-                out.push(value);
-                i += 3;
-                continue;
-            }
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let Ok(value) = u8::from_str_radix(&input[i + 1..i + 3], 16)
+        {
+            out.push(value);
+            i += 3;
+            continue;
         }
         out.push(bytes[i]);
         i += 1;

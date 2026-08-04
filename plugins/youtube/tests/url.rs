@@ -12,8 +12,7 @@ fn classifies_supported_watch_shorts_and_short_link_shapes() {
         (format!("https://www.youtube.com/shorts/{ID}/"), ID),
         (format!("https://youtu.be/{ID}"), ID),
     ] {
-        let canonical =
-            classify_url(&input).unwrap_or_else(|e| panic!("rejected {input}: {e}"));
+        let canonical = classify_url(&input).unwrap_or_else(|e| panic!("rejected {input}: {e}"));
         assert_eq!(canonical.as_str(), expected_id, "input: {input}");
         assert_eq!(
             canonical.watch_url(),

@@ -10,7 +10,9 @@ fn mime_parts(mime_type: &str) -> (Option<String>, Option<String>) {
     let (family, rest) = mime_type
         .split_once(';')
         .map_or((mime_type, ""), |(family, rest)| (family, rest));
-    let format = family.split_once('/').map(|(_, subtype)| subtype.to_owned());
+    let format = family
+        .split_once('/')
+        .map(|(_, subtype)| subtype.to_owned());
     let codecs = rest.split_once("codecs=").and_then(|(_, value)| {
         let value = value.trim().trim_matches('"');
         (!value.is_empty()).then(|| value.to_owned())
