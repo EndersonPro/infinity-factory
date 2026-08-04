@@ -47,8 +47,8 @@
     },
     {
       "asset_name": "youtube.bex",
-      "asset_sha256": "b2bf7e3b560dc8e1e1aee6efdc59d8487f98e52f45ac5cc848c024101b8bdb1b",
-      "asset_size": 137562,
+      "asset_sha256": "dac4e90bfb4ba05a74d38352c6a2592f3b7daf9c0c658dc789584676776cd267",
+      "asset_size": 137607,
       "id": "media-url-resolver.infinity-factory.youtube",
       "name": "YouTube Public Resolver",
       "type": "media-url-resolver",
