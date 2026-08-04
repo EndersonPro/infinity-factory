@@ -81,6 +81,12 @@ fn bandcamp_artist(authority: &str) -> Option<&str> {
             && !label.ends_with('-')
     })
 }
+fn youtube_authority(authority: &str) -> bool {
+    matches!(
+        authority,
+        "youtube.com" | "www.youtube.com" | "m.youtube.com" | "youtu.be"
+    )
+}
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
         return None;
@@ -96,20 +102,54 @@ fn parsed_https(value: &str) -> Option<Url> {
         && parsed.port().is_none()
         && parsed.fragment().is_none()
         && parsed.host_str() == Some(authority)
-        && (instagram_authority(authority) || bandcamp_artist(authority).is_some()))
+        && (instagram_authority(authority)
+            || bandcamp_artist(authority).is_some()
+            || youtube_authority(authority)))
     .then_some(parsed)
+}
+/// Exact `/watch?v=<id>` query shape: a single `v` parameter carrying an
+/// 11-character YouTube video id, and nothing else (no other params, no
+/// repeated `v`, no trailing junk after the id).
+fn valid_watch_query(query: &str) -> bool {
+    query.strip_prefix("v=").is_some_and(|id| {
+        id.len() == 11
+            && id
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
+    })
+}
+/// Exact player-JS asset path shape: `/s/player/{hash}/{variant}/{locale}/base.js`.
+/// This is the only non-watch GET the plugin issues, needed to fetch YouTube's
+/// player JS for signature-cipher decoding.
+fn valid_player_js_path(parts: &[&str]) -> bool {
+    parts.len() == 7
+        && parts[0].is_empty()
+        && parts[1] == "s"
+        && parts[2] == "player"
+        && !parts[3].is_empty()
+        && parts[3].len() <= 40
+        && parts[3].bytes().all(|value| value.is_ascii_alphanumeric())
+        && !parts[4].is_empty()
+        && parts[4].len() <= 40
+        && parts[4]
+            .bytes()
+            .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'.'))
+        && !parts[5].is_empty()
+        && parts[5].len() <= 16
+        && parts[5]
+            .bytes()
+            .all(|value| value.is_ascii_alphanumeric() || value == b'_')
+        && parts[6] == "base.js"
 }
 fn valid_get_url(value: &str) -> bool {
     let Some(url) = parsed_https(value) else {
         return false;
     };
-    if url.query().is_some() {
-        return false;
-    }
     let authority = url.host_str().unwrap_or("");
     let parts: Vec<&str> = url.path().split('/').collect();
     if instagram_authority(authority) {
-        parts.len() == 4
+        url.query().is_none()
+            && parts.len() == 4
             && parts[0].is_empty()
             && matches!(parts[1], "p" | "reel" | "reels" | "tv")
             && !parts[2].is_empty()
@@ -119,7 +159,8 @@ fn valid_get_url(value: &str) -> bool {
                 .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
             && parts[3].is_empty()
     } else if bandcamp_artist(authority).is_some() {
-        parts.len() == 3
+        url.query().is_none()
+            && parts.len() == 3
             && parts[0].is_empty()
             && parts[1] == "track"
             && !parts[2].is_empty()
@@ -127,6 +168,16 @@ fn valid_get_url(value: &str) -> bool {
             && parts[2]
                 .bytes()
                 .all(|value| value.is_ascii_lowercase() || value.is_ascii_digit() || value == b'-')
+    } else if youtube_authority(authority) {
+        match url.query() {
+            Some(query) => {
+                parts.len() == 2
+                    && parts[0].is_empty()
+                    && parts[1] == "watch"
+                    && valid_watch_query(query)
+            }
+            None => valid_player_js_path(&parts),
+        }
     } else {
         false
     }

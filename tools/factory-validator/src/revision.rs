@@ -36,7 +36,11 @@ pub static V2: AcceptedRevision = AcceptedRevision {
     wit_path: "wit/media-url-resolver-v2/wit/media-url-resolver.wit",
     import: Some("component:media-url-resolver/https-client@2.0.0"),
     export: "component:media-url-resolver/resolver@2.0.0",
-    network_policies: &["instagram-public-v1", "bandcamp-public-v1"],
+    network_policies: &[
+        "instagram-public-v1",
+        "bandcamp-public-v1",
+        "youtube-public-v1",
+    ],
 };
 
 /// Every revision the packer accepts. Fail closed: any manifest, package,
@@ -229,6 +233,16 @@ mod tests {
             "network_policy": "unexpected-policy",
         });
         assert!(accepted_for_manifest(&manifest).is_err());
+    }
+
+    #[test]
+    fn accepts_v2_manifest_with_youtube_policy() {
+        let manifest = serde_json::json!({
+            "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+            "network_policy": "youtube-public-v1",
+        });
+        let revision = accepted_for_manifest(&manifest).expect("youtube policy must resolve");
+        assert_eq!(revision.version, "2.0.0");
     }
 
     #[test]
