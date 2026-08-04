@@ -20,6 +20,7 @@ build_plugin() {
 }
 build_plugin direct-url
 build_plugin instagram
+build_plugin bandcamp
 rm -rf "$OUTPUT_DIR"
 cargo run --locked -p factory-validator -- pack-all --output "$OUTPUT_DIR"
 test -f "$OUTPUT_DIR/bex-factory.json"

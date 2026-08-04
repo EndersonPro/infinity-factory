@@ -3,10 +3,10 @@ use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     fs,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
 };
-use tar::{Builder, Header};
+use tar::{Builder, EntryType, Header};
 
 mod revision;
 pub use revision::{
@@ -355,16 +355,26 @@ pub fn pack_all(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn pack(plugin: &Path, wasm: &Path, wit: PathBuf, output: &Path) -> io::Result<()> {
-    let encoder = zstd::Encoder::new(fs::File::create(output)?, 19)?;
-    let mut tar = Builder::new(encoder.auto_finish());
-    for (name, path) in [
-        ("manifest.json", plugin.join("manifest.json")),
-        ("plugin.wasm", wasm.to_path_buf()),
-        ("plugin.wit", wit),
-    ] {
-        append(&mut tar, name, &fs::read(path)?)?;
+    let mut archive = Vec::new();
+    {
+        let mut tar = Builder::new(&mut archive);
+        for (name, path) in [
+            ("manifest.json", plugin.join("manifest.json")),
+            ("plugin.wasm", wasm.to_path_buf()),
+            ("plugin.wit", wit),
+        ] {
+            append(&mut tar, name, &fs::read(path)?)?;
+        }
+        tar.finish()?;
     }
-    tar.finish()
+    const TAR_RECORD_SIZE: usize = 10_240;
+    archive.resize(archive.len().div_ceil(TAR_RECORD_SIZE) * TAR_RECORD_SIZE, 0);
+
+    let mut encoder = zstd::Encoder::new(fs::File::create(output)?, 19)?;
+    encoder.include_checksum(true)?;
+    encoder.set_pledged_src_size(Some(archive.len() as u64))?;
+    encoder.write_all(&archive)?;
+    encoder.finish().map(|_| ())
 }
 
 fn append<W: io::Write>(tar: &mut Builder<W>, name: &str, bytes: &[u8]) -> io::Result<()> {
@@ -374,8 +384,15 @@ fn append<W: io::Write>(tar: &mut Builder<W>, name: &str, bytes: &[u8]) -> io::R
     header.set_uid(0);
     header.set_gid(0);
     header.set_mtime(0);
+    header.set_entry_type(EntryType::Regular);
+    header.set_path(name)?;
     header.set_cksum();
-    tar.append_data(&mut header, name, bytes)
+    // Match GNU tar's six-digit checksum plus NUL/space encoding used by proven packages.
+    let header_bytes = header.as_mut_bytes();
+    header_bytes.copy_within(149..155, 148);
+    header_bytes[154] = 0;
+    header_bytes[155] = b' ';
+    tar.append(&header, bytes)
 }
 
 pub fn validate_archive(path: &Path) -> Result<(), Box<dyn Error>> {
