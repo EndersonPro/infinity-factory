@@ -1,0 +1,32 @@
+{
+  "manifest_version": "1.0",
+  "id": "media-url-resolver.infinity-factory.youtube",
+  "name": "YouTube Public Resolver",
+  "version": "2",
+  "type": "media-url-resolver",
+  "description": "Deterministic resolver for public YouTube watch/shorts video streams via watch-page extraction and signature-cipher decoding.",
+  "publisher": {"name": "Infinity Factory", "url": null, "contact": null, "key_id": null},
+  "license": "MIT",
+  "homepage": "",
+  "icon": null,
+  "host_site": [
+    "https://youtube.com",
+    "https://www.youtube.com",
+    "https://m.youtube.com",
+    "https://youtu.be"
+  ],
+  "capabilities": [],
+  "created_at": "2026-08-03T00:00:00Z",
+  "remote_url": null,
+  "keys_required": {},
+  "thumbnail_url": null,
+  "resolver": true,
+  "last_updated": null,
+  "country_allowlist": [],
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver"
+  },
+  "network_policy": "youtube-public-v1"
+}
