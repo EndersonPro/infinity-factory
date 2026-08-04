@@ -2,7 +2,7 @@
   "manifest_version": "1.0",
   "id": "media-url-resolver.infinity-factory.youtube",
   "name": "YouTube Public Resolver",
-  "version": "2",
+  "version": "3",
   "type": "media-url-resolver",
   "description": "Deterministic resolver for public YouTube watch/shorts video streams via watch-page extraction and signature-cipher decoding.",
   "publisher": {"name": "Infinity Factory", "url": null, "contact": null, "key_id": null},

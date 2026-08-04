@@ -47,12 +47,12 @@
     },
     {
       "asset_name": "youtube.bex",
-      "asset_sha256": "dac4e90bfb4ba05a74d38352c6a2592f3b7daf9c0c658dc789584676776cd267",
-      "asset_size": 137607,
+      "asset_sha256": "32c8ea73d49131fe3e2e715595d44d1ba8ab1ed561af3230ddaf4666c5843e24",
+      "asset_size": 137609,
       "id": "media-url-resolver.infinity-factory.youtube",
       "name": "YouTube Public Resolver",
       "type": "media-url-resolver",
-      "version": "2",
+      "version": "3",
       "wit": {
         "package": "component:media-url-resolver",
         "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
