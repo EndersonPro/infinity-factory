@@ -38,8 +38,11 @@ fn valid_id(id: &str) -> bool {
 /// Classifies a public YouTube URL strictly, before any I/O. Accepted shapes:
 /// `https://{youtube.com,www.youtube.com,m.youtube.com}/watch?v={id}`,
 /// `https://{youtube.com,www.youtube.com,m.youtube.com}/shorts/{id}`, and
-/// `https://youtu.be/{id}`. No other query parameters, fragments, or path
-/// shapes are tolerated; everything else is rejected with zero host calls.
+/// `https://youtu.be/{id}`. Fragments and unsupported path shapes are
+/// rejected with zero host calls; any other query parameter (`si`, `list`,
+/// `t`, `feature`, `pp`, ...) is share-link noise, not part of the shape, and
+/// is ignored rather than rejected — a real share from the YouTube app
+/// almost always carries an `si` param on `youtu.be` links.
 pub fn classify_url(source: &str) -> Result<VideoId, UrlError> {
     if source.is_empty() || source.len() > bounds::URL || !source.is_ascii() || source.contains('#')
     {
@@ -59,21 +62,22 @@ pub fn classify_url(source: &str) -> Result<VideoId, UrlError> {
             .map_or((path_and_query, None), |(path, query)| (path, Some(query)));
         let segments: Vec<&str> = path.split('/').collect();
         if matches!(segments.as_slice(), ["watch"]) {
-            let query = query.ok_or(UrlError::Invalid)?;
-            query.strip_prefix("v=").ok_or(UrlError::Invalid)?
-        } else if (matches!(segments.as_slice(), ["shorts", _])
-            || matches!(segments.as_slice(), ["shorts", _, ""]))
-            && query.is_none()
-        {
+            // `v` need not be the only or the first query param.
+            query
+                .ok_or(UrlError::Invalid)?
+                .split('&')
+                .find_map(|pair| pair.strip_prefix("v="))
+                .ok_or(UrlError::Invalid)?
+        } else if matches!(segments.as_slice(), ["shorts", _] | ["shorts", _, ""]) {
             segments[1]
         } else {
             return Err(UrlError::Invalid);
         }
     } else if authority == "youtu.be" {
-        if path_and_query.contains('?') {
-            return Err(UrlError::Invalid);
-        }
-        let segments: Vec<&str> = path_and_query.split('/').collect();
+        let path = path_and_query
+            .split_once('?')
+            .map_or(path_and_query, |(path, _)| path);
+        let segments: Vec<&str> = path.split('/').collect();
         if matches!(segments.as_slice(), [_]) {
             segments[0]
         } else {

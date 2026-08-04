@@ -11,6 +11,14 @@ fn classifies_supported_watch_shorts_and_short_link_shapes() {
         (format!("https://www.youtube.com/shorts/{ID}"), ID),
         (format!("https://www.youtube.com/shorts/{ID}/"), ID),
         (format!("https://youtu.be/{ID}"), ID),
+        // Share-link query noise is ignored, not rejected.
+        (format!("https://www.youtube.com/watch?v={ID}&list=xyz"), ID),
+        (format!("https://www.youtube.com/watch?list=xyz&v={ID}"), ID),
+        (
+            format!("https://www.youtube.com/shorts/{ID}?feature=share"),
+            ID,
+        ),
+        (format!("https://youtu.be/{ID}?si=GWCVzk9sJxd1HdYc"), ID),
     ] {
         let canonical = classify_url(&input).unwrap_or_else(|e| panic!("rejected {input}: {e}"));
         assert_eq!(canonical.as_str(), expected_id, "input: {input}");
@@ -30,8 +38,6 @@ fn rejects_unsupported_or_malformed_sources_before_host_use() {
         "https://www.youtube.com/watch",
         "https://www.youtube.com/watch?v=short",
         "https://www.youtube.com/watch?v=dQw4w9WgXcQextra",
-        "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=xyz",
-        "https://www.youtube.com/watch?list=xyz&v=dQw4w9WgXcQ",
         "https://www.youtube.com/watch?v=dQw4w9WgXcQ#frag",
         "https://user@www.youtube.com/watch?v=dQw4w9WgXcQ",
         "https://www.youtube.com:443/watch?v=dQw4w9WgXcQ",
@@ -39,8 +45,6 @@ fn rejects_unsupported_or_malformed_sources_before_host_use() {
         "https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ",
         "https://www.youtube.com/embed/dQw4w9WgXcQ",
         "https://www.youtube.com/v/dQw4w9WgXcQ",
-        "https://www.youtube.com/shorts/dQw4w9WgXcQ?feature=share",
-        "https://youtu.be/dQw4w9WgXcQ?t=10",
         "https://youtu.be/dQw4w9WgXcQ/extra",
         "https://youtu.be/short",
         "www.youtube.com/watch?v=dQw4w9WgXcQ",
