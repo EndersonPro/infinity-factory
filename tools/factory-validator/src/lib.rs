@@ -282,6 +282,51 @@ pub fn hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+/// Stage only tracked packages whose bytes are bound by the source catalog.
+pub fn stage_release_assets(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
+    let catalog_bytes = fs::read(root.join("factory/bex-factory.json"))?;
+    let catalog: Value = serde_json::from_slice(&catalog_bytes)?;
+    if catalog["schema_version"].as_str() != Some("1") {
+        return Err("unsupported factory catalog schema".into());
+    }
+    let plugins = catalog["plugins"]
+        .as_array()
+        .filter(|plugins| !plugins.is_empty())
+        .ok_or("factory catalog has no plugins")?;
+    let mut names = std::collections::HashSet::new();
+    let mut assets = Vec::with_capacity(plugins.len());
+    for plugin in plugins {
+        let name = required(plugin, "asset_name")?;
+        if Path::new(name).file_name().and_then(|value| value.to_str()) != Some(name)
+            || !name.ends_with(".bex")
+            || !names.insert(name)
+        {
+            return Err(format!("invalid or duplicate release asset name: {name}").into());
+        }
+        let fixture = root.join("fixtures/packages").join(name);
+        let bytes = fs::read(&fixture)?;
+        let expected_size = plugin["asset_size"]
+            .as_u64()
+            .ok_or_else(|| format!("missing asset_size for {name}"))?;
+        let expected_sha = required(plugin, "asset_sha256")?;
+        if bytes.len() as u64 != expected_size || hex(&bytes) != expected_sha {
+            return Err(format!("canonical fixture does not match catalog: {name}").into());
+        }
+        validate_archive(&fixture)?;
+        assets.push((name, bytes));
+    }
+
+    if output.exists() {
+        fs::remove_dir_all(output)?;
+    }
+    fs::create_dir_all(output)?;
+    for (name, bytes) in assets {
+        fs::write(output.join(name), bytes)?;
+    }
+    fs::write(output.join("bex-factory.json"), catalog_bytes)?;
+    Ok(())
+}
+
 /// Package every plugin in `root/plugins` into `output`, binding each one to
 /// the exact ABI revision its manifest declares. Adding a new revision never
 /// changes an unrelated plugin's packaged bytes or factory index entry:

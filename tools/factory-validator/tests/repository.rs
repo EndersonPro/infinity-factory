@@ -78,6 +78,21 @@ fn runtime_repository_feed_matches_the_release_catalog_asset() {
     let release_workflow = fs::read_to_string(root.join(".github/workflows/release.yml"))
         .expect("release workflow must exist");
     assert!(release_workflow.contains("dist/bex-factory.json repository.json"));
+    let build = release_workflow
+        .find("./scripts/build-plugins.sh")
+        .expect("release must validate source builds");
+    let stage = release_workflow
+        .find("./scripts/stage-release-assets.sh")
+        .expect("release must stage canonical assets");
+    let publish = release_workflow
+        .find("gh release create")
+        .expect("release must publish staged assets");
+    assert!(build < stage && stage < publish);
+
+    let build_script = fs::read_to_string(root.join("scripts/build-plugins.sh"))
+        .expect("source build script must exist");
+    assert!(build_script.contains("target/source-package-validation"));
+    assert!(!build_script.contains("OUTPUT_DIR:=dist"));
 }
 
 #[test]

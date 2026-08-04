@@ -37,9 +37,12 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install pinned component tooling
         run: cargo install cargo-component --version 0.21.1 --locked
-      - run: ./scripts/build-plugins.sh
+      - name: Build and validate plugin sources
+        run: ./scripts/build-plugins.sh
         env:
           ALLOW_WASIP2_FALLBACK: "0"
+      - name: Stage canonical tracked release assets
+        run: ./scripts/stage-release-assets.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: bex-factory
