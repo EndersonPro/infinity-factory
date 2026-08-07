@@ -87,6 +87,14 @@ fn youtube_authority(authority: &str) -> bool {
         "youtube.com" | "www.youtube.com" | "m.youtube.com" | "youtu.be"
     )
 }
+/// The single X syndication host, matched exactly.
+///
+/// No suffix or wildcard form: `compatibility/v2/abi-identity-vectors.json`
+/// names `wildcard-host` and `deceptive-host` as invalid ABI shapes, and a
+/// suffix match here would admit `cdn.syndication.twimg.com.example.org`.
+fn x_syndication_authority(authority: &str) -> bool {
+    authority == "cdn.syndication.twimg.com"
+}
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
         return None;
@@ -104,7 +112,8 @@ fn parsed_https(value: &str) -> Option<Url> {
         && parsed.host_str() == Some(authority)
         && (instagram_authority(authority)
             || bandcamp_artist(authority).is_some()
-            || youtube_authority(authority)))
+            || youtube_authority(authority)
+            || x_syndication_authority(authority)))
     .then_some(parsed)
 }
 /// Exact `/watch?v=<id>` query shape: a single `v` parameter carrying an
@@ -117,6 +126,43 @@ fn valid_watch_query(query: &str) -> bool {
                 .bytes()
                 .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
     })
+}
+/// Exact `?id={digits}&token={token}` shape: two pairs, in that order, and
+/// nothing else.
+///
+/// A total comparison rather than a parse over query pairs. A parse has to
+/// decide what a repeated `id` means, and every such decision is somewhere a
+/// second one can hide; this shape has nowhere to put it.
+fn valid_syndication_query(query: &str) -> bool {
+    let Some((id, token)) = query.split_once('&') else {
+        return false;
+    };
+    let (Some(id), Some(token)) = (id.strip_prefix("id="), token.strip_prefix("token=")) else {
+        return false;
+    };
+    valid_syndication_id(id) && valid_syndication_token(token)
+}
+/// 1-19 ASCII digits, no leading zero.
+///
+/// Bounded at 19 rather than 20 so every admitted id parses into a `u64`: a
+/// 20-digit value may exceed `u64::MAX`, and 19 never does.
+fn valid_syndication_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 19
+        && !id.starts_with('0')
+        && id.bytes().all(|value| value.is_ascii_digit())
+}
+/// 1-16 characters drawn from `1-9a-z`.
+///
+/// `0` is excluded deliberately: the token derivation strips `0` and `.` from
+/// its base-36 output, so a token carrying a zero is a string the guest cannot
+/// produce, and admitting it would widen the gate past what it can emit.
+fn valid_syndication_token(token: &str) -> bool {
+    !token.is_empty()
+        && token.len() <= 16
+        && token
+            .bytes()
+            .all(|value| matches!(value, b'1'..=b'9') || value.is_ascii_lowercase())
 }
 /// Exact player-JS asset path shape: `/s/player/{hash}/{variant}/{locale}/base.js`.
 /// This is the only non-watch GET the plugin issues, needed to fetch YouTube's
@@ -178,6 +224,11 @@ fn valid_get_url(value: &str) -> bool {
             }
             None => valid_player_js_path(&parts),
         }
+    } else if x_syndication_authority(authority) {
+        parts.len() == 2
+            && parts[0].is_empty()
+            && parts[1] == "tweet-result"
+            && url.query().is_some_and(valid_syndication_query)
     } else {
         false
     }

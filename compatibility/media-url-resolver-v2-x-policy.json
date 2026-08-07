@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "id": "x-syndication-v1",
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver",
+    "wit_sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5"
+  },
+  "operations": ["get"],
+  "allowed_hosts": ["cdn.syndication.twimg.com"],
+  "get_path_families": ["tweet-result"],
+  "get_query_keys": ["id", "token"],
+  "get_headers": [],
+  "media_hosts": ["video.twimg.com"],
+  "thumbnail_hosts": ["pbs.twimg.com"],
+  "response_headers": [
+    "cache-control", "content-length", "content-type", "etag",
+    "last-modified", "retry-after"
+  ],
+  "limits": {
+    "url_bytes": 2048,
+    "post_id_digits": 19,
+    "token_bytes": 16,
+    "get_headers": 0,
+    "response_body_bytes": 4194304,
+    "json_depth": 32,
+    "json_members_and_elements": 512,
+    "json_string_bytes": 4096,
+    "media_detail_entries": 4,
+    "variant_entries": 16,
+    "candidates": 16,
+    "deadline_ms": 10000,
+    "redirects": 3
+  },
+  "same_origin_redirects": true,
+  "redacted": [
+    "authorization", "cookie", "set-cookie", "response-body",
+    "guest-token", "bearer-token", "transport-diagnostics"
+  ],
+  "excluded_workflows": [
+    "graphql-api", "guest-tokens", "bearer-tokens", "login",
+    "protected-accounts", "quoted-tweet-recursion", "threads", "spaces",
+    "broadcasts", "image-extraction", "embeds", "private-content", "cookies",
+    "browser-automation", "hls", "dash", "drm", "media-downloading",
+    "redistribution-rights"
+  ]
+}
