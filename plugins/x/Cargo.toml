@@ -1,0 +1,16 @@
+[package]
+name = "x"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bex-media-url-resolver-v2 = { path = "../../sdk/bex-media-url-resolver-v2" }
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+
+[package.metadata.component]
+package = "component:media-url-resolver"

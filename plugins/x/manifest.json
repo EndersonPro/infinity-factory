@@ -1,0 +1,27 @@
+{
+  "manifest_version": "1.0",
+  "id": "media-url-resolver.infinity-factory.x",
+  "name": "X Public Post Resolver",
+  "version": "1",
+  "type": "media-url-resolver",
+  "description": "Deterministic resolver for progressive MP4 attached to a public X post, via one anonymous GET to the syndication endpoint.",
+  "publisher": {"name": "Infinity Factory", "url": null, "contact": null, "key_id": null},
+  "license": "MIT",
+  "homepage": "",
+  "icon": null,
+  "host_site": ["https://cdn.syndication.twimg.com"],
+  "capabilities": [],
+  "created_at": "2026-08-07T00:00:00Z",
+  "remote_url": null,
+  "keys_required": {},
+  "thumbnail_url": null,
+  "resolver": true,
+  "last_updated": null,
+  "country_allowlist": [],
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver"
+  },
+  "network_policy": "x-syndication-v1"
+}
