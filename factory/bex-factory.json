@@ -2,8 +2,8 @@
   "plugins": [
     {
       "asset_name": "bandcamp.bex",
-      "asset_sha256": "18d3ce0f5d2d91b496520627fff023e4cbcae4e1da28141b88b47973122b647a",
-      "asset_size": 122047,
+      "asset_sha256": "fce9634d486aae8055dd01003823ea3e37de47824e40acf6af3e8ebf8c0f126a",
+      "asset_size": 121484,
       "id": "media-url-resolver.infinity-factory.bandcamp",
       "name": "Bandcamp Public Track Resolver",
       "type": "media-url-resolver",
@@ -17,8 +17,8 @@
     },
     {
       "asset_name": "direct-url.bex",
-      "asset_sha256": "cec4c5b5dbec699ca48eae7d0f367726e75ecea0c05c6b3f09208542596fe1a4",
-      "asset_size": 96282,
+      "asset_sha256": "e5a9dcdb8eba828b803349da6ac1bcbd7d02281d6ef3e3b6c492886b2cbe5340",
+      "asset_size": 93097,
       "id": "media-url-resolver.infinity-factory.direct-url",
       "name": "Direct URL Resolver",
       "type": "media-url-resolver",
@@ -32,8 +32,8 @@
     },
     {
       "asset_name": "instagram.bex",
-      "asset_sha256": "5ed932269c1fd9cf4493490b84943a5a240b89468ca5002eb578399b020cbaa7",
-      "asset_size": 123372,
+      "asset_sha256": "d7fa3f9469b9f4b462aa9fa371592f5d4c8124e6f2513c6b194d2586c3bbed57",
+      "asset_size": 117901,
       "id": "media-url-resolver.infinity-factory.instagram",
       "name": "Instagram Public Resolver",
       "type": "media-url-resolver",
@@ -62,8 +62,8 @@
     },
     {
       "asset_name": "youtube.bex",
-      "asset_sha256": "16e4f5254d248ae03d540fbf055fe77b4bdaf568153d0d8ad46192f57e479bd7",
-      "asset_size": 137789,
+      "asset_sha256": "32c8ea73d49131fe3e2e715595d44d1ba8ab1ed561af3230ddaf4666c5843e24",
+      "asset_size": 137609,
       "id": "media-url-resolver.infinity-factory.youtube",
       "name": "YouTube Public Resolver",
       "type": "media-url-resolver",
