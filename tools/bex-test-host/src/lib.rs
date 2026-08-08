@@ -9,7 +9,9 @@ pub mod package;
 
 pub use contracts::{Command, HostError, HostResult, PackagePayload, Report, Status, WitBinding};
 pub use fixture::{
-    Field, FieldCategory, FixtureEngine, FixtureRequest, FixtureResponse, Operation,
+    FailureCoordinate, Field, FieldCategory, FixtureEngine, FixtureExchange, FixtureFailure,
+    FixtureFailureKind, FixtureOutcome, FixtureReply, FixtureReplyError, FixtureRequest,
+    FixtureResponse, Observation, ObservedField, Operation,
 };
 pub use output::{Format, exit_code, render};
 pub use package::{inspect_package, validate_package};

@@ -40,6 +40,7 @@ pub static V2: AcceptedRevision = AcceptedRevision {
         "instagram-public-v1",
         "bandcamp-public-v1",
         "youtube-public-v1",
+        "x-syndication-v1",
     ],
 };
 
