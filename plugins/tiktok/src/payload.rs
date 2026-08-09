@@ -30,7 +30,10 @@ pub struct VideoData {
     pub bitrate_info_url_lists: Vec<String>,
 }
 
-fn as_object<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_json::Map<String, serde_json::Value>> {
+fn as_object<'a>(
+    value: &'a serde_json::Value,
+    key: &str,
+) -> Option<&'a serde_json::Map<String, serde_json::Value>> {
     value.get(key).and_then(serde_json::Value::as_object)
 }
 
@@ -119,7 +122,10 @@ pub fn parse_universal_data(body: &[u8]) -> Result<VideoData, ResolverError> {
     }
 
     let mut bitrate_info_url_lists = Vec::new();
-    if let Some(bitrate_info) = video_obj.get("bitrateInfo").and_then(serde_json::Value::as_array) {
+    if let Some(bitrate_info) = video_obj
+        .get("bitrateInfo")
+        .and_then(serde_json::Value::as_array)
+    {
         for entry in bitrate_info {
             if let Some(play_addr) = entry.get("PlayAddr").and_then(serde_json::Value::as_object)
                 && let Some(url_list) = play_addr.get("UrlList")

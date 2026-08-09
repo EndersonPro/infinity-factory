@@ -8,7 +8,7 @@
 
 use bex_media_url_resolver_v2::Resolution;
 use std::fs;
-use tiktok::{is_gateway_url, is_safe_tiktok_output_url, map, parse_universal_data, VideoData};
+use tiktok::{VideoData, is_gateway_url, is_safe_tiktok_output_url, map, parse_universal_data};
 use url::Url;
 
 const FIXTURE_DIR: &str = "tests/fixtures";
@@ -56,7 +56,10 @@ fn returns_candidates_of_cdn_urls_for_typical_multi_url_video() {
             assert!((2..=16).contains(&items.len()), "candidates within bound");
             for candidate in &items {
                 let url = Url::parse(&candidate.stream.url).expect("candidate url parses");
-                assert!(is_safe_tiktok_output_url(&url), "candidate on admitted family");
+                assert!(
+                    is_safe_tiktok_output_url(&url),
+                    "candidate on admitted family"
+                );
                 assert!(!is_gateway_url(&url), "no gateway in candidates");
             }
         }
@@ -73,9 +76,10 @@ fn filters_out_gateway_urls_from_candidates() {
         other => panic!("expected candidates, got {other:?}"),
     };
     assert!(
-        items
-            .iter()
-            .all(|c| !c.stream.url.starts_with("https://www.tiktok.com/aweme/v1/play/")),
+        items.iter().all(|c| !c
+            .stream
+            .url
+            .starts_with("https://www.tiktok.com/aweme/v1/play/")),
         "gateway URL must not survive into candidates"
     );
     let hosts: Vec<String> = items
@@ -86,8 +90,14 @@ fn filters_out_gateway_urls_from_candidates() {
                 .and_then(|u| u.host_str().map(|h| h.to_owned()))
         })
         .collect();
-    assert!(hosts.iter().any(|h| h.starts_with("v16-webapp-prime")), "v16 CDN retained");
-    assert!(hosts.iter().any(|h| h.starts_with("v19-webapp-prime")), "v19 CDN retained");
+    assert!(
+        hosts.iter().any(|h| h.starts_with("v16-webapp-prime")),
+        "v16 CDN retained"
+    );
+    assert!(
+        hosts.iter().any(|h| h.starts_with("v19-webapp-prime")),
+        "v19 CDN retained"
+    );
 }
 
 // Scenario: Deduplicates URLs across playAddr/downloadAddr/UrlList/bitrateInfo (spec.md:228-232)
@@ -111,7 +121,12 @@ fn deduplicates_urls_across_sources() {
 fn returns_unsupported_when_no_cdn_url_survives_filtering() {
     let gateway = "https://www.tiktok.com/aweme/v1/play/?item_id=123";
     let bare_apex = "https://tiktokcdn.com/video/a.mp4";
-    let v = video(None, None, vec![gateway.to_owned(), bare_apex.to_owned()], vec![]);
+    let v = video(
+        None,
+        None,
+        vec![gateway.to_owned(), bare_apex.to_owned()],
+        vec![],
+    );
     assert!(matches!(map(&v), Resolution::Unsupported(_)));
 }
 
@@ -144,19 +159,15 @@ fn rejects_candidate_urls_whose_host_is_not_in_admitted_output_family() {
     assert!(!is_safe_tiktok_output_url(&parse_url(bare_apex)));
     assert!(!is_safe_tiktok_output_url(&parse_url(impersonator)));
     // Integration: only unsafe URLs present -> 0 survivors -> Unsupported.
-    let v = video(
-        Some(bare_apex),
-        None,
-        vec![impersonator.to_owned()],
-        vec![],
-    );
+    let v = video(Some(bare_apex), None, vec![impersonator.to_owned()], vec![]);
     assert!(matches!(map(&v), Resolution::Unsupported(_)));
 }
 
 // Scenario: Resolves via playAddr when downloadAddr absent (downloadSetting != 0) (spec.md:264-269)
 #[test]
 fn resolves_via_playaddr_when_downloadaddr_absent() {
-    let play_addr = "https://v16-webapp-prime.tiktok.com/video/tos/alisg/playaddr/?mime_type=video_mp4";
+    let play_addr =
+        "https://v16-webapp-prime.tiktok.com/video/tos/alisg/playaddr/?mime_type=video_mp4";
     let v = video(Some(play_addr), None, vec![], vec![]);
     match map(&v) {
         Resolution::Direct(stream) => assert_eq!(stream.url, play_addr),
@@ -168,13 +179,20 @@ fn resolves_via_playaddr_when_downloadaddr_absent() {
 #[test]
 fn resolves_via_playaddr_when_both_playaddr_and_downloadaddr_present() {
     let play_addr = "https://v16-webapp-prime.tiktok.com/video/tos/alisg/play/?mime_type=video_mp4";
-    let download_addr = "https://v19-webapp-prime.tiktok.com/video/tos/alisg/download/?mime_type=video_mp4";
+    let download_addr =
+        "https://v19-webapp-prime.tiktok.com/video/tos/alisg/download/?mime_type=video_mp4";
     let v = video(Some(play_addr), Some(download_addr), vec![], vec![]);
     match map(&v) {
         Resolution::Candidates(items) => {
             let urls: Vec<&str> = items.iter().map(|c| c.stream.url.as_str()).collect();
-            assert!(urls.contains(&play_addr), "playAddr included among candidates");
-            assert!(urls.contains(&download_addr), "downloadAddr included among candidates");
+            assert!(
+                urls.contains(&play_addr),
+                "playAddr included among candidates"
+            );
+            assert!(
+                urls.contains(&download_addr),
+                "downloadAddr included among candidates"
+            );
         }
         other => panic!("expected candidates, got {other:?}"),
     }

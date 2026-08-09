@@ -130,9 +130,7 @@ fn validates_exact_tiktok_get_policy() {
         .is_ok()
     );
     assert!(validate_get_request(&get("https://www.tiktok.com/@_/video/123")).is_ok());
-    assert!(
-        validate_get_request(&get("https://www.tiktok.com/@user.name_v2/video/123")).is_ok()
-    );
+    assert!(validate_get_request(&get("https://www.tiktok.com/@user.name_v2/video/123")).is_ok());
     for url in [
         "http://www.tiktok.com/@user/video/123",
         "https://tiktok.com/@user/video/123",

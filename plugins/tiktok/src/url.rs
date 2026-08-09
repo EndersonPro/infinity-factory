@@ -32,9 +32,7 @@ fn valid_user_label(label: &str) -> bool {
 
 /// TikTok video id: 1-19 ASCII digits.
 fn valid_video_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.len() <= 19
-        && id.bytes().all(|value| value.is_ascii_digit())
+    !id.is_empty() && id.len() <= 19 && id.bytes().all(|value| value.is_ascii_digit())
 }
 
 /// Spec Req 1: Accepts canonical user/video URL; Accepts canonical user "_"

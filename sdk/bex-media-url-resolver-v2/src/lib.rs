@@ -209,9 +209,7 @@ fn valid_tiktok_user_label(label: &str) -> bool {
 }
 /// TikTok video id: 1-19 ASCII digits.
 fn valid_tiktok_video_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.len() <= 19
-        && id.bytes().all(|value| value.is_ascii_digit())
+    !id.is_empty() && id.len() <= 19 && id.bytes().all(|value| value.is_ascii_digit())
 }
 fn valid_get_url(value: &str) -> bool {
     let Some(url) = parsed_https(value) else {

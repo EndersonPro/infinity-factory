@@ -7,8 +7,8 @@
 // GET (accept + accept-language only) and validates the SDK response.
 
 use bex_media_url_resolver_v2::{
-    validate_get_request, ExpectedCall, GetRequest, Header, HttpsError, HttpsResponse,
-    MockHttpsClient, ResolverErrorKind,
+    ExpectedCall, GetRequest, Header, HttpsError, HttpsResponse, MockHttpsClient,
+    ResolverErrorKind, validate_get_request,
 };
 use tiktok::{classify_url, retrieve_https, retrieve_source};
 

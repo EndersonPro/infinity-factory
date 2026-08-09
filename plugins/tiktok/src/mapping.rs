@@ -1,5 +1,5 @@
 use crate::payload::VideoData;
-use bex_media_url_resolver_v2::{resolver_bounds, Candidate, MediaStream, Resolution, Unsupported};
+use bex_media_url_resolver_v2::{Candidate, MediaStream, Resolution, Unsupported, resolver_bounds};
 use url::Url;
 
 /// Suffix-exact, non-apex admitted output hosts (design.md:19). Each arm

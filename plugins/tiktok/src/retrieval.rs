@@ -1,8 +1,8 @@
 use crate::url::CanonicalUrl;
 use crate::{classify_url, error};
 use bex_media_url_resolver_v2::{
-    validate_https_response, GetRequest, Header, HttpsClient, HttpsResponse, ResolveResponse,
-    ResolverError,
+    GetRequest, Header, HttpsClient, HttpsResponse, ResolveResponse, ResolverError,
+    validate_https_response,
 };
 
 /// The exact two request headers a TikTok canonical-page GET carries. The

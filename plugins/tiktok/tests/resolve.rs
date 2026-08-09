@@ -45,11 +45,15 @@ fn resolves_canonical_probe_end_to_end_into_candidates() {
         Resolution::Candidates(items) => items,
         other => panic!("expected candidates, got {other:?}"),
     };
-    assert!((2..=16).contains(&items.len()), "candidates within sdk bound");
     assert!(
-        items
-            .iter()
-            .all(|c| !c.stream.url.starts_with("https://www.tiktok.com/aweme/v1/play/")),
+        (2..=16).contains(&items.len()),
+        "candidates within sdk bound"
+    );
+    assert!(
+        items.iter().all(|c| !c
+            .stream
+            .url
+            .starts_with("https://www.tiktok.com/aweme/v1/play/")),
         "gateway rejected from output"
     );
     assert_eq!(client.observations().len(), 1);

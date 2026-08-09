@@ -9,7 +9,7 @@ mod url;
 mod error;
 
 pub use mapping::{is_gateway_url, is_safe_tiktok_output_url, map};
-pub use payload::{parse_universal_data, VideoData};
+pub use payload::{VideoData, parse_universal_data};
 pub use retrieval::{resolve_public, resolve_public_at, retrieve_https, retrieve_source};
 pub use url::{CanonicalUrl, classify_url};
 
