@@ -90,3 +90,40 @@ fn rejects_www_douyin_com_separate_site() {
     // spec.md:89-93 — Douyin is a separate site and change
     assert!(classify_url("https://www.douyin.com/video/12345").is_err());
 }
+
+// TRIANGULATE — adversarial near-miss host vectors per
+// compatibility/v2/abi-identity-vectors.json deceptive-host / wildcard-host
+// shapes and the new-extractor additive invariant (exact-match authority).
+
+#[test]
+fn rejects_deceptive_host_evil_tiktok_tld() {
+    // deceptive-host: looks like tiktok but wrong TLD
+    assert!(classify_url("https://evil-tiktok.tld/@user/video/123").is_err());
+}
+
+#[test]
+fn rejects_subdomain_cheat_tiktok_attacker_com() {
+    // subdomain cheat: tiktok as a label on an attacker domain
+    assert!(classify_url("https://tiktok.attacker.com/@user/video/123").is_err());
+}
+
+#[test]
+fn rejects_bare_apex_tiktok_com() {
+    // bare apex without www: exact-match predicate requires www.tiktok.com
+    assert!(classify_url("https://tiktok.com/@user/video/123").is_err());
+}
+
+#[test]
+fn rejects_suffix_abuse_www_tiktok_com_evil_com() {
+    // suffix abuse: www.tiktok.com embedded as a label prefix of an attacker host
+    assert!(classify_url("https://www.tiktok.com.evil.com/@user/video/123").is_err());
+}
+
+#[test]
+fn rejects_gateway_path_prefix_right_host_wrong_shape() {
+    // www.tiktok.com/aweme/v1/play/ is the internal player redirect gateway.
+    // Right host, but fails the /@{user}/video/{id} shape — rejected by the
+    // path-bound check before any host call (proposal.md:165-168).
+    assert!(classify_url("https://www.tiktok.com/aweme/v1/play/").is_err());
+    assert!(classify_url("https://www.tiktok.com/aweme/v1/play/?item_id=123").is_err());
+}
