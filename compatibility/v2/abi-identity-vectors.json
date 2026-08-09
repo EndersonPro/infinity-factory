@@ -9,6 +9,15 @@
       "imports": ["https-client"],
       "operations": ["get", "post-public-graphql"],
       "policy": "instagram-public-v1"
+    },
+    {
+      "name": "exact-v2-tiktok-policy",
+      "package": "component:media-url-resolver",
+      "version": "2.0.0",
+      "world": "media-url-resolver",
+      "imports": ["https-client"],
+      "operations": ["get"],
+      "policy": "tiktok-public-v1"
     }
   ],
   "invalid": [

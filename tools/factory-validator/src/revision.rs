@@ -41,6 +41,7 @@ pub static V2: AcceptedRevision = AcceptedRevision {
         "bandcamp-public-v1",
         "youtube-public-v1",
         "x-syndication-v1",
+        "tiktok-public-v1",
     ],
 };
 
@@ -243,6 +244,16 @@ mod tests {
             "network_policy": "youtube-public-v1",
         });
         let revision = accepted_for_manifest(&manifest).expect("youtube policy must resolve");
+        assert_eq!(revision.version, "2.0.0");
+    }
+
+    #[test]
+    fn accepts_v2_manifest_with_tiktok_policy() {
+        let manifest = serde_json::json!({
+            "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+            "network_policy": "tiktok-public-v1",
+        });
+        let revision = accepted_for_manifest(&manifest).expect("tiktok policy must resolve");
         assert_eq!(revision.version, "2.0.0");
     }
 

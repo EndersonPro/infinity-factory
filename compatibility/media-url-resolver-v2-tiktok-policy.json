@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "id": "tiktok-public-v1",
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver",
+    "wit_sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5"
+  },
+  "operations": ["get"],
+  "allowed_hosts": ["www.tiktok.com"],
+  "get_path_families": ["@{user}/video/{id}"],
+  "get_headers": ["accept", "accept-language"],
+  "media_hosts": [
+    "*.tiktokcdn.com",
+    "*.tiktokv.com",
+    "v*-webapp-prime.tiktok.com"
+  ],
+  "thumbnail_hosts": [],
+  "response_headers": [
+    "cache-control", "content-length", "content-type", "etag",
+    "last-modified", "retry-after"
+  ],
+  "limits": {
+    "url_bytes": 2048,
+    "user_label_bytes": 64,
+    "video_id_bytes": 19,
+    "get_headers": 2,
+    "response_body_bytes": 4194304,
+    "universal_data_bytes": 4194304,
+    "json_depth": 128,
+    "candidates": 16,
+    "deadline_ms": 10000,
+    "redirects": 3
+  },
+  "same_origin_redirects": true,
+  "excluded_media": ["www.tiktok.com/aweme/v1/play/"],
+  "redacted": [
+    "authorization", "cookie", "set-cookie", "response-body",
+    "universal-data", "statusMsg", "transport-diagnostics"
+  ],
+  "excluded_workflows": [
+    "short-links", "vm-share", "vt-share", "www-t-share", "live",
+    "webcast", "slideshow", "profile", "home", "app-api",
+    "douyin", "js-challenge", "browser-automation", "hls",
+    "dash", "drm", "media-downloading", "redistribution-rights"
+  ]
+}

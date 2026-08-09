@@ -109,7 +109,7 @@ fn abi_v2_policy_identity() {
     let vectors_text = read("compatibility/v2/abi-identity-vectors.json");
     assert_eq!(
         hex(&vectors_text),
-        "024bc98262fd539470cf3f33a40bb585792ad187123a9009cd8901cb5f5328c6"
+        "c3432c9049edf50f5461a04960261bdbc73f23b0473c8c9b91f42585a75998ba"
     );
     let vectors: Value = serde_json::from_str(&vectors_text).expect("vectors must be JSON");
     assert!(
