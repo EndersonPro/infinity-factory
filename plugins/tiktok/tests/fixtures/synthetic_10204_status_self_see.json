@@ -1,0 +1,20 @@
+{
+  "__DEFAULT_SCOPE__": {
+    "webapp.video-detail": {
+      "statusCode": 10204,
+      "statusMsg": "status_self_see",
+      "itemInfo": {
+        "itemStruct": {
+          "id": "7000000000000000000",
+          "desc": "self-restricted",
+          "video": {
+            "playAddr": "https://v16-webapp-prime.tiktok.com/video/tos/alisg/x/?mime_type=video_mp4",
+            "PlayAddrStruct": {
+              "UrlList": ["https://v16-webapp-prime.tiktok.com/video/tos/alisg/x/?mime_type=video_mp4"]
+            }
+          }
+        }
+      }
+    }
+  }
+}
