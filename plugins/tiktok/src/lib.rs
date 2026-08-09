@@ -1,12 +1,12 @@
+mod retrieval;
 mod url;
 
-// `error` is scaffolded per design T3.5 with the `ResolverError` helpers
-// (InvalidInput, MalformedResponse, UnsupportedUrl, transport/status maps)
-// that Slice 2's retrieval/payload/mapping call. No Slice 1 path exercises
-// them yet, so `dead_code` is suppressed at the module boundary; Slice 2
-// removes this attribute once retrieval.rs calls `invalid_input`/`transport`/
-// `status`/`unsupported`/`malformed`.
-#[allow(dead_code)]
+// `error` helpers are exercised by retrieval (invalid_input, transport,
+// malformed, status and the private/unavailable arms status reaches) and,
+// once payload lands, `unsupported`. Until then `unsupported` is the only
+// uncalled helper; its `dead_code` is suppressed at the function boundary
+// and removed when payload.rs maps a non-zero statusCode to it.
 mod error;
 
+pub use retrieval::{retrieve_https, retrieve_source};
 pub use url::{CanonicalUrl, classify_url};
