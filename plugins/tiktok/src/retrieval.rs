@@ -1,6 +1,9 @@
 use crate::url::CanonicalUrl;
 use crate::{classify_url, error};
-use bex_media_url_resolver_v2::{validate_https_response, GetRequest, Header, HttpsResponse, HttpsClient, ResolverError};
+use bex_media_url_resolver_v2::{
+    validate_https_response, GetRequest, Header, HttpsClient, HttpsResponse, ResolveResponse,
+    ResolverError,
+};
 
 /// The exact two request headers a TikTok canonical-page GET carries. The
 /// v2 SDK authority gate admits ONLY `accept` and `accept-language` for guest
@@ -46,12 +49,31 @@ pub fn retrieve_https(
 
 /// Spec Req 2 transport seam: classify the source URL (zero host calls on
 /// rejection → InvalidInput) then issue the single bounded GET. Returns the
-/// raw validated response without parsing; the full `resolve_public_at`
-/// composition (parse + map) is layered on once payload and mapping exist.
+/// raw validated response without parsing.
 pub fn retrieve_source(
     client: &mut impl HttpsClient,
     source: &str,
 ) -> Result<HttpsResponse, ResolverError> {
     let canonical = classify_url(source).map_err(|_| error::invalid_input())?;
     retrieve_https(client, &canonical)
+}
+
+/// Compose classify -> retrieve -> parse -> map (design.md data flow). The
+/// hermetic seam used by tests; the wasm component supplies the live client.
+pub fn resolve_public_at(
+    client: &mut impl HttpsClient,
+    source: &str,
+) -> Result<ResolveResponse, ResolverError> {
+    let response = retrieve_source(client, source)?;
+    crate::parse_and_map(&response.body)
+}
+
+/// Production entry used by the exported component (design.md:101-105). The
+/// tiktok pipeline carries no `now`-dependent expiry (unlike bandcamp's
+/// `ts`/`token` audio streams), so the host clock is not injected here.
+pub fn resolve_public(
+    client: &mut impl HttpsClient,
+    source: &str,
+) -> Result<ResolveResponse, ResolverError> {
+    resolve_public_at(client, source)
 }

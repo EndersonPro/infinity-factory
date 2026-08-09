@@ -2,6 +2,19 @@ use crate::payload::VideoData;
 use bex_media_url_resolver_v2::{resolver_bounds, Candidate, MediaStream, Resolution, Unsupported};
 use url::Url;
 
+/// Suffix-exact, non-apex admitted output hosts (design.md:19). Each arm
+/// matches a literal suffix AND rejects the bare apex of that suffix; no
+/// wildcards — `compatibility/v2/abi-identity-vectors.json` names
+/// `wildcard-host` and `deceptive-host` as invalid ABI shapes.
+fn admitted_output_family(host: &str) -> bool {
+    let cdn = host.ends_with(".tiktokcdn.com") && host != "tiktokcdn.com";
+    let tiktokv = host.ends_with(".tiktokv.com") && host != "tiktokv.com";
+    let webapp_prime = host.starts_with('v')
+        && host.ends_with("-webapp-prime.tiktok.com")
+        && host != "webapp-prime.tiktok.com";
+    cdn || tiktokv || webapp_prime
+}
+
 /// Three exact, non-apex CDN family checks. Each is a disjunctive arm: the
 /// host must MATCH a literal suffix AND must not be the bare apex of that
 /// suffix. No wildcards — `compatibility/v2/abi-identity-vectors.json` names
@@ -28,12 +41,7 @@ pub fn is_safe_tiktok_output_url(u: &Url) -> bool {
     {
         return false;
     }
-    let cdn = host.ends_with(".tiktokcdn.com") && host != "tiktokcdn.com";
-    let tiktokv = host.ends_with(".tiktokv.com") && host != "tiktokv.com";
-    let webapp_prime = host.starts_with('v')
-        && host.ends_with("-webapp-prime.tiktok.com")
-        && host != "webapp-prime.tiktok.com";
-    cdn || tiktokv || webapp_prime
+    admitted_output_family(host)
 }
 
 /// The TikTok internal player redirect; declared out of output scope
