@@ -78,9 +78,13 @@ fn filters_out_gateway_urls_from_candidates() {
             .all(|c| !c.stream.url.starts_with("https://www.tiktok.com/aweme/v1/play/")),
         "gateway URL must not survive into candidates"
     );
-    let hosts: Vec<&str> = items
+    let hosts: Vec<String> = items
         .iter()
-        .filter_map(|c| Url::parse(&c.stream.url).ok().and_then(|u| u.host_str().map(Into::into)))
+        .filter_map(|c| {
+            Url::parse(&c.stream.url)
+                .ok()
+                .and_then(|u| u.host_str().map(|h| h.to_owned()))
+        })
         .collect();
     assert!(hosts.iter().any(|h| h.starts_with("v16-webapp-prime")), "v16 CDN retained");
     assert!(hosts.iter().any(|h| h.starts_with("v19-webapp-prime")), "v19 CDN retained");
