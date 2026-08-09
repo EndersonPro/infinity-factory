@@ -8,7 +8,7 @@
 
 use bex_media_url_resolver_v2::ResolverErrorKind;
 use std::fs;
-use tiktok::{parse_universal_data, VideoData};
+use tiktok::parse_universal_data;
 
 const FIXTURE_DIR: &str = "tests/fixtures";
 

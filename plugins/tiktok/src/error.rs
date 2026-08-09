@@ -31,10 +31,6 @@ pub(crate) fn malformed() -> ResolverError {
 /// `new-extractor/SKILL.md:159-167`). WIT `unsupported-url` variant of the
 /// `resolver-error-kind` enum (`wit/media-url-resolver-v2/wit/
 /// media-url-resolver.wit:58-62`).
-//
-// `dead_code` is allowed here until payload.rs (Slice 2 Task 8) maps a
-// non-zero `statusCode` to this helper; retrieval alone does not reach it.
-#[allow(dead_code)]
 pub(crate) fn unsupported() -> ResolverError {
     error(
         ResolverErrorKind::UnsupportedUrl,
