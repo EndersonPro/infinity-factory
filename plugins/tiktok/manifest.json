@@ -1,0 +1,27 @@
+{
+  "manifest_version": "1.0",
+  "id": "media-url-resolver.infinity-factory.tiktok",
+  "name": "TikTok Public Video Resolver",
+  "version": "2",
+  "type": "media-url-resolver",
+  "description": "Deterministic resolver for public TikTok canonical video pages into validated direct MP4 CDN URLs via one anonymous GET plus bounded universal-data parsing.",
+  "publisher": {"name": "Infinity Factory", "url": null, "contact": null, "key_id": null},
+  "license": "MIT",
+  "homepage": "",
+  "icon": null,
+  "host_site": ["https://www.tiktok.com"],
+  "capabilities": [],
+  "created_at": "2026-08-09T00:00:00Z",
+  "remote_url": null,
+  "keys_required": {},
+  "thumbnail_url": null,
+  "resolver": true,
+  "last_updated": null,
+  "country_allowlist": [],
+  "abi": {
+    "package": "component:media-url-resolver",
+    "version": "2.0.0",
+    "world": "media-url-resolver"
+  },
+  "network_policy": "tiktok-public-v1"
+}

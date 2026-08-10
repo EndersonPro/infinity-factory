@@ -1,0 +1,20 @@
+{
+  "__DEFAULT_SCOPE__": {
+    "webapp.video-detail": {
+      "statusCode": 10204,
+      "statusMsg": "person_geo_fencing",
+      "itemInfo": {
+        "itemStruct": {
+          "id": "7000000000000000001",
+          "desc": "geo-restricted",
+          "video": {
+            "playAddr": "https://v16-webapp-prime.tiktok.com/video/tos/alisg/y/?mime_type=video_mp4",
+            "PlayAddrStruct": {
+              "UrlList": ["https://v16-webapp-prime.tiktok.com/video/tos/alisg/y/?mime_type=video_mp4"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

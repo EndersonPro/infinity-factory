@@ -9,6 +9,7 @@ members = [
   "plugins/bandcamp",
   "plugins/youtube",
   "plugins/x",
+  "plugins/tiktok",
 ]
 resolver = "2"
 

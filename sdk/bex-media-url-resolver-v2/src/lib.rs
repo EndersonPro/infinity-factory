@@ -95,6 +95,14 @@ fn youtube_authority(authority: &str) -> bool {
 fn x_syndication_authority(authority: &str) -> bool {
     authority == "cdn.syndication.twimg.com"
 }
+/// The single canonical TikTok public-video host, matched exactly.
+///
+/// No suffix or wildcard form: `compatibility/v2/abi-identity-vectors.json`
+/// names `wildcard-host` and `deceptive-host` as invalid ABI shapes, and a
+/// suffix match here would admit `www.tiktok.com.evil.com`.
+fn tiktok_authority(authority: &str) -> bool {
+    authority == "www.tiktok.com"
+}
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
         return None;
@@ -113,7 +121,8 @@ fn parsed_https(value: &str) -> Option<Url> {
         && (instagram_authority(authority)
             || bandcamp_artist(authority).is_some()
             || youtube_authority(authority)
-            || x_syndication_authority(authority)))
+            || x_syndication_authority(authority)
+            || tiktok_authority(authority)))
     .then_some(parsed)
 }
 /// Exact `/watch?v=<id>` query shape: a single `v` parameter carrying an
@@ -187,6 +196,21 @@ fn valid_player_js_path(parts: &[&str]) -> bool {
             .all(|value| value.is_ascii_alphanumeric() || value == b'_')
         && parts[6] == "base.js"
 }
+/// TikTok `@{user}` label: 1-64 bytes from `[A-Za-z0-9._-]`. The literal `_`
+/// is a canonical user segment (yt-dlp's `_create_url` fallback at
+/// `yt_dlp/extractor/tiktok.py:106-108`), not a sentinel; it is admitted by
+/// this character set.
+fn valid_tiktok_user_label(label: &str) -> bool {
+    !label.is_empty()
+        && label.len() <= 64
+        && label
+            .bytes()
+            .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'.' | b'_' | b'-'))
+}
+/// TikTok video id: 1-19 ASCII digits.
+fn valid_tiktok_video_id(id: &str) -> bool {
+    !id.is_empty() && id.len() <= 19 && id.bytes().all(|value| value.is_ascii_digit())
+}
 fn valid_get_url(value: &str) -> bool {
     let Some(url) = parsed_https(value) else {
         return false;
@@ -229,6 +253,16 @@ fn valid_get_url(value: &str) -> bool {
             && parts[0].is_empty()
             && parts[1] == "tweet-result"
             && url.query().is_some_and(valid_syndication_query)
+    } else if tiktok_authority(authority) {
+        url.query().is_none()
+            && parts.len() == 4
+            && parts[0].is_empty()
+            && parts[1].starts_with('@')
+            && parts[1].len() >= 2
+            && parts[1].len() <= 65
+            && valid_tiktok_user_label(&parts[1][1..])
+            && parts[2] == "video"
+            && valid_tiktok_video_id(parts[3])
     } else {
         false
     }

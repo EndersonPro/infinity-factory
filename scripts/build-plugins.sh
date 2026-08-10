@@ -23,6 +23,7 @@ build_plugin instagram
 build_plugin bandcamp
 build_plugin youtube
 build_plugin x
+build_plugin tiktok
 rm -rf "$OUTPUT_DIR"
 cargo run --locked -p factory-validator -- pack-all --output "$OUTPUT_DIR"
 test -f "$OUTPUT_DIR/bex-factory.json"

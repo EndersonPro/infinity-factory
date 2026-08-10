@@ -122,6 +122,60 @@ fn validates_bandcamp_final_url_in_response() {
 }
 
 #[test]
+fn validates_exact_tiktok_get_policy() {
+    assert!(
+        validate_get_request(&get(
+            "https://www.tiktok.com/@pokemonlife22/video/7059698374567611694"
+        ))
+        .is_ok()
+    );
+    assert!(validate_get_request(&get("https://www.tiktok.com/@_/video/123")).is_ok());
+    assert!(validate_get_request(&get("https://www.tiktok.com/@user.name_v2/video/123")).is_ok());
+    for url in [
+        "http://www.tiktok.com/@user/video/123",
+        "https://tiktok.com/@user/video/123",
+        "https://www.tiktok.com.evil.com/@user/video/123",
+        "https://evil-tiktok.tld/@user/video/123",
+        "https://tiktok.attacker.com/@user/video/123",
+        "https://www.tiktok.com/@user",
+        "https://www.tiktok.com/@user/live",
+        "https://www.tiktok.com/@user/video/123?lang=en",
+        "https://www.tiktok.com/@user/video/123#t=1",
+        "https://user@www.tiktok.com/@user/video/123",
+        "https://www.tiktok.com:443/@user/video/123",
+        "https://www.tiktok.com/@user/video/123/extra",
+        "https://www.tiktok.com/aweme/v1/play/",
+        "https://m.tiktok.com/share/live/12345",
+        "https://webcast.tiktok.com/anywhere",
+        "https://vm.tiktok.com/Z123abc/",
+    ] {
+        assert!(validate_get_request(&get(url)).is_err(), "accepted {url}");
+    }
+}
+
+#[test]
+fn validates_tiktok_final_url_in_response() {
+    let mut response = HttpsResponse {
+        status: 200,
+        final_url: "https://www.tiktok.com/@pokemonlife22/video/7059698374567611694".into(),
+        headers: vec![Header {
+            name: "content-type".into(),
+            value: "text/html".into(),
+        }],
+        body: b"ok".to_vec(),
+    };
+    assert!(validate_https_response(&response).is_ok());
+    // redirect to another canonical tiktok video is accepted
+    response.final_url = "https://www.tiktok.com/@_/video/999".into();
+    assert!(validate_https_response(&response).is_ok());
+    // off-origin redirect to a CDN host is rejected by the GET URL policy
+    response.final_url = "https://v16-webapp-prime.tiktok.com/video/abc".into();
+    assert!(validate_https_response(&response).is_err());
+    response.final_url = "https://evil.example/@user/video/123".into();
+    assert!(validate_https_response(&response).is_err());
+}
+
+#[test]
 fn validates_graphql_and_response_boundaries() {
     assert!(validate_public_graphql_request(&post()).is_ok());
     let mut invalid = post();
