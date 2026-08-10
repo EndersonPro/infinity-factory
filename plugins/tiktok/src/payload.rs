@@ -7,6 +7,11 @@ use bex_media_url_resolver_v2::{ResolverError, bounds};
 const UNIVERSAL_OPEN: &str =
     "<script id=\"__UNIVERSAL_DATA_FOR_REHYDRATION__\" type=\"application/json\">";
 const UNIVERSAL_CLOSE: &str = "</script>";
+/// TikTok's mobile rendering path embeds the same public video detail object
+/// in this later JSON island instead of in universal rehydration.  The host
+/// chooses that rendering path with its own anonymous browser identity; this
+/// remains a body-only parse and never executes page JavaScript.
+const API_DATA_OPEN: &str = "<script id=\"api-data\" type=\"application/json\">";
 
 /// Per-list defensive cap so a hostile or drifting body cannot trigger
 /// unbounded allocation inside the guest. The SDK body cap
@@ -73,20 +78,19 @@ fn bounded_string(value: &serde_json::Value) -> Option<String> {
 /// itemInfo.itemStruct.video is absent").
 pub fn parse_universal_data(body: &[u8]) -> Result<VideoData, ResolverError> {
     let text = std::str::from_utf8(body).map_err(|_| error::unsupported())?;
-    let Some(open) = text.find(UNIVERSAL_OPEN) else {
-        return Err(error::unsupported());
-    };
-    let json_start = open + UNIVERSAL_OPEN.len();
-    let Some(close) = text[json_start..].find(UNIVERSAL_CLOSE) else {
-        return Err(error::unsupported());
-    };
-    let json_text = &text[json_start..json_start + close];
-    let root: serde_json::Value =
-        serde_json::from_str(json_text).map_err(|_| error::unsupported())?;
-    let scope = as_object(&root, "__DEFAULT_SCOPE__").ok_or_else(error::unsupported)?;
-    let video_detail = scope
-        .get("webapp.video-detail")
+    let universal_root = script_json(text, UNIVERSAL_OPEN);
+    let api_root = script_json(text, API_DATA_OPEN);
+    let video_detail = universal_root
+        .as_ref()
+        .and_then(|root| as_object(root, "__DEFAULT_SCOPE__"))
+        .and_then(|scope| scope.get("webapp.video-detail"))
         .and_then(serde_json::Value::as_object)
+        .or_else(|| {
+            api_root
+                .as_ref()
+                .and_then(|root| root.get("videoDetail"))
+                .and_then(serde_json::Value::as_object)
+        })
         .ok_or_else(error::unsupported)?;
     let status_code = video_detail
         .get("statusCode")
@@ -150,4 +154,14 @@ pub fn parse_universal_data(body: &[u8]) -> Result<VideoData, ResolverError> {
         play_addr_struct_url_list,
         bitrate_info_url_lists,
     })
+}
+
+/// Parses one explicitly named JSON script island.  Its bounded enclosing HTML
+/// is capped by the SDK before this point; a missing or malformed island is a
+/// content-state result rather than an upstream parser error.
+fn script_json(text: &str, open_marker: &str) -> Option<serde_json::Value> {
+    let open = text.find(open_marker)?;
+    let json_start = open + open_marker.len();
+    let close = text[json_start..].find(UNIVERSAL_CLOSE)?;
+    serde_json::from_str(&text[json_start..json_start + close]).ok()
 }

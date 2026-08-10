@@ -6,9 +6,9 @@
 // when `src/payload.rs` binds `__DEFAULT_SCOPE__.webapp.video-detail.itemInfo.
 // itemStruct.video` and gates on statusCode.
 
-use bex_media_url_resolver_v2::ResolverErrorKind;
+use bex_media_url_resolver_v2::{Resolution, ResolverErrorKind};
 use std::fs;
-use tiktok::parse_universal_data;
+use tiktok::{parse_and_map, parse_universal_data};
 
 const FIXTURE_DIR: &str = "tests/fixtures";
 
@@ -32,6 +32,15 @@ fn page_fixture(name: &str) -> Vec<u8> {
     page(std::str::from_utf8(&fixture(name)).expect("utf-8 fixture"))
 }
 
+fn mobile_page(inner_json: &str) -> Vec<u8> {
+    format!(
+        "<html><body><script id=\"api-data\" type=\"application/json\">\
+         {inner_json}\
+         </script></body></html>"
+    )
+    .into_bytes()
+}
+
 // Scenario: Parses universal data block to video struct (spec.md:140-144)
 #[test]
 fn parses_universal_data_block_to_video_struct() {
@@ -47,6 +56,27 @@ fn parses_universal_data_block_to_video_struct() {
     // PlayAddrStruct.UrlList carries 2 CDN entries + 1 www.tiktok.com gateway.
     assert_eq!(video.play_addr_struct_url_list.len(), 3);
     assert_eq!(video.bitrate_info_url_lists.len(), 3);
+}
+
+/// TikTok currently serves public detail pages to the host's anonymous mobile
+/// browser identity with `api-data`, while the older desktop rendering used
+/// universal rehydration. Both are static JSON script islands carrying the
+/// identical video-detail contract.
+#[test]
+fn parses_mobile_api_data_video_detail() {
+    let body = mobile_page(
+        r#"{"videoDetail":{"statusCode":0,"itemInfo":{"itemStruct":{"video":{
+            "playAddr":"https://v16-webapp-prime.tiktok.com/video/tos/alisg/mobile/?mime_type=video_mp4"
+        }}}}}"#,
+    );
+    let video = parse_universal_data(&body).expect("mobile api-data parses");
+    assert_eq!(video.status_code, 0);
+    assert_eq!(
+        video.play_addr.as_deref(),
+        Some("https://v16-webapp-prime.tiktok.com/video/tos/alisg/mobile/?mime_type=video_mp4")
+    );
+    let resolved = parse_and_map(&body).expect("mobile api-data maps");
+    assert!(matches!(resolved.resolution, Resolution::Direct(_)));
 }
 
 // Scenario: Returns Unsupported when universal data block is absent (spec.md:146-150)
