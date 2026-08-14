@@ -1,4 +1,6 @@
-use super::{GetRequest, Header, HttpsClient, HttpsError, HttpsResponse, PublicGraphqlCall};
+use super::{
+    GetRequest, Header, HttpsClient, HttpsError, HttpsResponse, PublicGraphqlCall, TahoeCall,
+};
 use std::collections::VecDeque;
 
 pub struct PublicGraphqlExpectation {
@@ -31,6 +33,31 @@ impl PublicGraphqlExpectation {
 pub enum ExpectedCall {
     Get(GetRequest, Result<HttpsResponse, HttpsError>),
     Graphql(PublicGraphqlExpectation),
+    Tahoe(TahoeExpectation),
+}
+pub struct TahoeExpectation {
+    url: String,
+    fb_dtsg_len: usize,
+    pkg_cohort: String,
+    client_rev: String,
+    result: Result<HttpsResponse, HttpsError>,
+}
+impl TahoeExpectation {
+    pub fn new(
+        url: &str,
+        fb_dtsg_len: usize,
+        pkg_cohort: &str,
+        client_rev: &str,
+        result: Result<HttpsResponse, HttpsError>,
+    ) -> Self {
+        Self {
+            url: url.into(),
+            fb_dtsg_len,
+            pkg_cohort: pkg_cohort.into(),
+            client_rev: client_rev.into(),
+            result,
+        }
+    }
 }
 #[derive(Debug, Eq, PartialEq)]
 pub struct Observation {
@@ -100,6 +127,22 @@ impl HttpsClient for MockHttpsClient {
                     && expected.doc_id == request.0.doc_id
                     && expected.variables == request.0.variables
                     && expected.lsd_len == request.0.lsd.len() =>
+            {
+                expected.result
+            }
+            _ => self.reject(),
+        }
+    }
+    fn post_tahoe(&mut self, request: TahoeCall) -> Result<HttpsResponse, HttpsError> {
+        self.observations.push(Observation {
+            operation: "post-tahoe",
+        });
+        match self.expected.pop_front() {
+            Some(ExpectedCall::Tahoe(expected))
+                if expected.url == request.0.url
+                    && expected.fb_dtsg_len == request.0.fb_dtsg.len()
+                    && expected.pkg_cohort == request.0.pkg_cohort
+                    && expected.client_rev == request.0.client_rev =>
             {
                 expected.result
             }

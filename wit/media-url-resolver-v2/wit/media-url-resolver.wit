@@ -7,6 +7,9 @@ interface https-client {
     url: string, lsd: string, friendly-name: string,
     doc-id: string, variables: string
   }
+  record tahoe-request {
+    url: string, fb-dtsg: string, pkg-cohort: string, client-rev: string
+  }
   record https-response {
     status: u16, final-url: string, headers: list<header>, body: list<u8>
   }
@@ -16,6 +19,8 @@ interface https-client {
   }
   get: func(request: get-request) -> result<https-response, https-error>;
   post-public-graphql: func(request: public-graphql-request)
+    -> result<https-response, https-error>;
+  post-tahoe: func(request: tahoe-request)
     -> result<https-response, https-error>;
 }
 

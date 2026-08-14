@@ -9,7 +9,7 @@ wit_bindgen::generate!({
 });
 
 pub use component::media_url_resolver::https_client::{
-    GetRequest, Header, HttpsError, HttpsResponse, PublicGraphqlRequest,
+    GetRequest, Header, HttpsError, HttpsResponse, PublicGraphqlRequest, TahoeRequest,
 };
 pub use exports::component::media_url_resolver::resolver::{
     Candidate, ContextEntry, Deferred, Guest as ResolverGuest, Header as ResolverHeader,
@@ -19,7 +19,9 @@ pub use exports::component::media_url_resolver::resolver::{
 };
 mod mock;
 mod resolver;
-pub use mock::{ExpectedCall, MockHttpsClient, Observation, PublicGraphqlExpectation};
+pub use mock::{
+    ExpectedCall, MockHttpsClient, Observation, PublicGraphqlExpectation, TahoeExpectation,
+};
 pub use resolver::{
     bounds as resolver_bounds, validate_request as validate_resolver_request,
     validate_response as validate_resolver_response,
@@ -41,6 +43,9 @@ pub mod bounds {
     pub const DOC_ID: usize = 64;
     pub const VARIABLES: usize = 32_768;
     pub const FORM_BODY: usize = 65_536;
+    pub const FB_DTSG: usize = 256;
+    pub const PKG_COHORT: usize = 128;
+    pub const CLIENT_REV: usize = 64;
     pub const RESPONSE_HEADERS: usize = 16;
     pub const RESPONSE_HEADER_NAME: usize = 64;
     pub const RESPONSE_HEADER_VALUE: usize = 4_096;
@@ -267,6 +272,36 @@ fn valid_get_url(value: &str) -> bool {
         false
     }
 }
+fn valid_tahoe_url(value: &str) -> bool {
+    if value.len() > bounds::URL || !value.starts_with("https://") {
+        return false;
+    }
+    let Ok(parsed) = Url::parse(value) else {
+        return false;
+    };
+    if parsed.scheme() != "https"
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.port().is_some()
+        || parsed.fragment().is_some()
+        || parsed.host_str() != Some("www.facebook.com")
+    {
+        return false;
+    }
+    let parts: Vec<&str> = parsed.path().split('/').collect();
+    parts.len() == 6
+        && parts[0].is_empty()
+        && parts[1] == "video"
+        && parts[2] == "tahoe"
+        && parts[3] == "async"
+        && !parts[4].is_empty()
+        && parts[4].len() <= 64
+        && parts[4]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+        && parts[5].is_empty()
+        && parsed.query().is_none()
+}
 fn valid_headers(headers: &[Header], response: bool) -> bool {
     let (count, name, value, combined) = if response {
         (
@@ -367,10 +402,25 @@ pub fn validate_public_graphql_request(
         .then_some(())
         .ok_or_else(request_error)
 }
+pub fn validate_tahoe_request(request: &TahoeRequest) -> Result<(), ResolverError> {
+    (valid_tahoe_url(&request.url)
+        && !request.fb_dtsg.is_empty()
+        && request.fb_dtsg.len() <= bounds::FB_DTSG
+        && request.fb_dtsg.bytes().all(|byte| byte.is_ascii_graphic())
+        && !request.pkg_cohort.is_empty()
+        && request.pkg_cohort.len() <= bounds::PKG_COHORT
+        && request.pkg_cohort.bytes().all(|byte| byte.is_ascii_graphic())
+        && !request.client_rev.is_empty()
+        && request.client_rev.len() <= bounds::CLIENT_REV
+        && request.client_rev.bytes().all(|byte| byte.is_ascii_digit()))
+        .then_some(())
+        .ok_or_else(request_error)
+}
 pub fn validate_https_response(response: &HttpsResponse) -> Result<(), ResolverError> {
     ((100..=599).contains(&response.status)
         && (valid_get_url(&response.final_url)
-            || response.final_url == "https://www.instagram.com/api/graphql")
+            || response.final_url == "https://www.instagram.com/api/graphql"
+            || valid_tahoe_url(&response.final_url))
         && valid_headers(&response.headers, true)
         && response.body.len() <= bounds::RESPONSE_BODY)
         .then_some(())
@@ -404,6 +454,34 @@ impl fmt::Display for EphemeralLsd {
         output.write_str("[REDACTED]")
     }
 }
+pub struct EphemeralFbDtsg(String);
+impl EphemeralFbDtsg {
+    pub fn new(value: String) -> Result<Self, ResolverError> {
+        (!value.is_empty()
+            && value.len() <= bounds::FB_DTSG
+            && value.bytes().all(|byte| byte.is_ascii_graphic()))
+        .then_some(Self(value))
+        .ok_or_else(request_error)
+    }
+    fn take(mut self) -> String {
+        std::mem::take(&mut self.0)
+    }
+}
+impl Drop for EphemeralFbDtsg {
+    fn drop(&mut self) {
+        self.0.zeroize();
+    }
+}
+impl fmt::Debug for EphemeralFbDtsg {
+    fn fmt(&self, output: &mut fmt::Formatter<'_>) -> fmt::Result {
+        output.write_str("[REDACTED]")
+    }
+}
+impl fmt::Display for EphemeralFbDtsg {
+    fn fmt(&self, output: &mut fmt::Formatter<'_>) -> fmt::Result {
+        output.write_str("[REDACTED]")
+    }
+}
 pub struct PublicGraphqlCall(PublicGraphqlRequest);
 impl Drop for PublicGraphqlCall {
     fn drop(&mut self) {
@@ -427,12 +505,34 @@ pub fn build_graphql_request(
     validate_public_graphql_request(&request.0)?;
     Ok(request)
 }
+pub struct TahoeCall(TahoeRequest);
+impl Drop for TahoeCall {
+    fn drop(&mut self) {
+        self.0.fb_dtsg.zeroize();
+    }
+}
+pub fn build_tahoe_request(
+    url: &str,
+    fb_dtsg: EphemeralFbDtsg,
+    pkg_cohort: &str,
+    client_rev: &str,
+) -> Result<TahoeCall, ResolverError> {
+    let request = TahoeCall(TahoeRequest {
+        url: url.into(),
+        fb_dtsg: fb_dtsg.take(),
+        pkg_cohort: pkg_cohort.into(),
+        client_rev: client_rev.into(),
+    });
+    validate_tahoe_request(&request.0)?;
+    Ok(request)
+}
 pub trait HttpsClient {
     fn get(&mut self, request: GetRequest) -> Result<HttpsResponse, HttpsError>;
     fn post_public_graphql(
         &mut self,
         request: PublicGraphqlCall,
     ) -> Result<HttpsResponse, HttpsError>;
+    fn post_tahoe(&mut self, request: TahoeCall) -> Result<HttpsResponse, HttpsError>;
 }
 pub struct WasmHttpsClient;
 #[cfg(target_arch = "wasm32")]
@@ -457,5 +557,104 @@ impl HttpsClient for WasmHttpsClient {
         checked_response(
             component::media_url_resolver::https_client::post_public_graphql(&request.0),
         )
+    }
+    fn post_tahoe(&mut self, request: TahoeCall) -> Result<HttpsResponse, HttpsError> {
+        validate_tahoe_request(&request.0).map_err(|_| HttpsError::InvalidRequest)?;
+        checked_response(component::media_url_resolver::https_client::post_tahoe(&request.0))
+    }
+}
+
+#[cfg(test)]
+mod tahoe_tests {
+    use super::*;
+
+    #[test]
+    fn ephemeral_fb_dtsg_constructs_valid() {
+        let value = EphemeralFbDtsg::new("valid_fb_dtsg_token".into());
+        assert!(value.is_ok());
+        let value = value.unwrap();
+        assert_eq!(value.0, "valid_fb_dtsg_token");
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_rejects_invalid() {
+        assert!(EphemeralFbDtsg::new(String::new()).is_err());
+        let oversize = "x".repeat(256 + 1);
+        assert!(EphemeralFbDtsg::new(oversize).is_err());
+        assert!(EphemeralFbDtsg::new("bad\0token".into()).is_err());
+        assert!(EphemeralFbDtsg::new("has space".into()).is_err());
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_at_bound_accepted() {
+        let at_bound = "x".repeat(256);
+        assert!(EphemeralFbDtsg::new(at_bound).is_ok());
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_has_drop_impl() {
+        assert!(std::mem::needs_drop::<EphemeralFbDtsg>());
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_zeroize_zeros_buffer_bytes() {
+        let secret = "secrettoken".to_string();
+        let ptr = secret.as_ptr();
+        let len = secret.len();
+        let mut value = EphemeralFbDtsg::new(secret).unwrap();
+        value.0.zeroize();
+        assert!(value.0.is_empty());
+        unsafe {
+            let bytes = std::slice::from_raw_parts(ptr, len);
+            assert!(
+                bytes.iter().all(|&b| b == 0),
+                "fb_dtsg buffer bytes were not zeroized"
+            );
+        }
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_take_extracts_secret_and_drop_is_safe() {
+        let value = EphemeralFbDtsg::new("takethissecret".into()).unwrap();
+        let extracted = value.take();
+        assert_eq!(extracted, "takethissecret");
+    }
+
+    #[test]
+    fn ephemeral_fb_dtsg_debug_and_display_redact() {
+        let value = EphemeralFbDtsg::new("SECRETVALUE".into()).unwrap();
+        let debug = format!("{:?}", value);
+        assert!(debug.contains("[REDACTED]"));
+        assert!(!debug.contains("SECRETVALUE"));
+        let display = format!("{}", value);
+        assert!(display.contains("[REDACTED]"));
+        assert!(!display.contains("SECRETVALUE"));
+    }
+
+    #[test]
+    fn tahoe_call_has_drop_impl() {
+        assert!(std::mem::needs_drop::<TahoeCall>());
+    }
+
+    #[test]
+    fn tahoe_call_zeroize_zeros_fb_dtsg_buffer() {
+        let mut call = build_tahoe_request(
+            "https://www.facebook.com/video/tahoe/async/10107927396957931/",
+            EphemeralFbDtsg::new("sensitive_fb_dtsg".into()).unwrap(),
+            "PHASED:DEFAULT",
+            "123456",
+        )
+        .unwrap();
+        let ptr = call.0.fb_dtsg.as_ptr();
+        let len = call.0.fb_dtsg.len();
+        call.0.fb_dtsg.zeroize();
+        assert!(call.0.fb_dtsg.is_empty());
+        unsafe {
+            let bytes = std::slice::from_raw_parts(ptr, len);
+            assert!(
+                bytes.iter().all(|&b| b == 0),
+                "TahoeCall fb_dtsg buffer bytes were not zeroized"
+            );
+        }
     }
 }
