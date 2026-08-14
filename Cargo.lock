@@ -252,6 +252,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "facebook"
+version = "0.1.0"
+dependencies = [
+ "bex-media-url-resolver-v2",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "factory-validator"
 version = "0.1.0"
 dependencies = [
