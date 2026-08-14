@@ -10,7 +10,7 @@ const URL: &str = "https://www.facebook.com/zuck/videos/10107927396957931/";
 const TAHOE_URL: &str = "https://www.facebook.com/video/tahoe/async/10107927396957931/";
 
 const FB_VIDEO: &str = include_str!("fixtures/fb_video.html");
-const FB_TAHOE_PAGE: &str = include_str!("fixtures/fb_tahoe_page.html");
+const FB_TAHOE_PAGE: &str = include_str!("fixtures/fb_tahoe.html");
 const FB_LOGIN_WALL: &str = include_str!("fixtures/fb_login_wall.html");
 const FB_NO_TOKENS: &str = include_str!("fixtures/fb_no_tokens.html");
 const FB_TAHOE_JSON: &[u8] = include_bytes!("fixtures/fb_tahoe.json");

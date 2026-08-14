@@ -2,23 +2,23 @@
   "plugins": [
     {
       "asset_name": "bandcamp.bex",
-      "asset_sha256": "fce9634d486aae8055dd01003823ea3e37de47824e40acf6af3e8ebf8c0f126a",
-      "asset_size": 121484,
+      "asset_sha256": "d2a12034e330b8fa1e1c5601fab9094fce873b705656773db879fdc0233a9cdc",
+      "asset_size": 122731,
       "id": "media-url-resolver.infinity-factory.bandcamp",
       "name": "Bandcamp Public Track Resolver",
       "type": "media-url-resolver",
       "version": "2",
       "wit": {
         "package": "component:media-url-resolver",
-        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
         "version": "2.0.0",
         "world": "media-url-resolver"
       }
     },
     {
       "asset_name": "direct-url.bex",
-      "asset_sha256": "e5a9dcdb8eba828b803349da6ac1bcbd7d02281d6ef3e3b6c492886b2cbe5340",
-      "asset_size": 93097,
+      "asset_sha256": "cec4c5b5dbec699ca48eae7d0f367726e75ecea0c05c6b3f09208542596fe1a4",
+      "asset_size": 96282,
       "id": "media-url-resolver.infinity-factory.direct-url",
       "name": "Direct URL Resolver",
       "type": "media-url-resolver",
@@ -31,61 +31,76 @@
       }
     },
     {
+      "asset_name": "facebook.bex",
+      "asset_sha256": "cbeeea51fbedd0359d9a13b02666d1f5f038cff2b6ebfa8a1de188e02e717435",
+      "asset_size": 117568,
+      "id": "media-url-resolver.infinity-factory.facebook",
+      "name": "Facebook Public Resolver",
+      "type": "media-url-resolver",
+      "version": "2",
+      "wit": {
+        "package": "component:media-url-resolver",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
+        "version": "2.0.0",
+        "world": "media-url-resolver"
+      }
+    },
+    {
       "asset_name": "instagram.bex",
-      "asset_sha256": "d7fa3f9469b9f4b462aa9fa371592f5d4c8124e6f2513c6b194d2586c3bbed57",
-      "asset_size": 117901,
+      "asset_sha256": "cf9881304bed83e05f0447b66649a215a1c0f39e270aa0861e5792c4115a7099",
+      "asset_size": 123981,
       "id": "media-url-resolver.infinity-factory.instagram",
       "name": "Instagram Public Resolver",
       "type": "media-url-resolver",
       "version": "2",
       "wit": {
         "package": "component:media-url-resolver",
-        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
         "version": "2.0.0",
         "world": "media-url-resolver"
       }
     },
     {
       "asset_name": "tiktok.bex",
-      "asset_sha256": "dc59d3deaaaf0d3c5169df5ba84b48d474a8c8cea0f017af958f60a5e1bda7e6",
-      "asset_size": 118155,
+      "asset_sha256": "80e6d716977e221bf5086a149da7f29037f764dc2dff3d4629333482572989f2",
+      "asset_size": 118469,
       "id": "media-url-resolver.infinity-factory.tiktok",
       "name": "TikTok Public Video Resolver",
       "type": "media-url-resolver",
       "version": "3",
       "wit": {
         "package": "component:media-url-resolver",
-        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
         "version": "2.0.0",
         "world": "media-url-resolver"
       }
     },
     {
       "asset_name": "x.bex",
-      "asset_sha256": "236fbba07bf45d966acd77c8458d61cb5693f8119bdff99a39513b262d2b4ecb",
-      "asset_size": 121807,
+      "asset_sha256": "a1900928731f7fb4ca683b46b8602b6b1b88f4a45f2b598c35f0d5d8597d6e4d",
+      "asset_size": 122378,
       "id": "media-url-resolver.infinity-factory.x",
       "name": "X Public Post Resolver",
       "type": "media-url-resolver",
       "version": "1",
       "wit": {
         "package": "component:media-url-resolver",
-        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
         "version": "2.0.0",
         "world": "media-url-resolver"
       }
     },
     {
       "asset_name": "youtube.bex",
-      "asset_sha256": "32c8ea73d49131fe3e2e715595d44d1ba8ab1ed561af3230ddaf4666c5843e24",
-      "asset_size": 137609,
+      "asset_sha256": "cb61fd256a11fedd7e0e64e8ac16540cfb58cf6c109a8ab2980839e509c958ab",
+      "asset_size": 138310,
       "id": "media-url-resolver.infinity-factory.youtube",
       "name": "YouTube Public Resolver",
       "type": "media-url-resolver",
       "version": "3",
       "wit": {
         "package": "component:media-url-resolver",
-        "sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5",
+        "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",
         "version": "2.0.0",
         "world": "media-url-resolver"
       }

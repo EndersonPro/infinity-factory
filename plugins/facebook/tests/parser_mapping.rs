@@ -5,7 +5,7 @@ use facebook::{
 };
 
 const FB_VIDEO: &str = include_str!("fixtures/fb_video.html");
-const FB_TAHOE_PAGE: &str = include_str!("fixtures/fb_tahoe_page.html");
+const FB_TAHOE_PAGE: &str = include_str!("fixtures/fb_tahoe.html");
 const FB_LOGIN_WALL: &str = include_str!("fixtures/fb_login_wall.html");
 const FB_TAHOE_JSON: &[u8] = include_bytes!("fixtures/fb_tahoe.json");
 

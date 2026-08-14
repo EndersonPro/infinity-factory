@@ -42,6 +42,7 @@ pub static V2: AcceptedRevision = AcceptedRevision {
         "youtube-public-v1",
         "x-syndication-v1",
         "tiktok-public-v1",
+        "facebook-public-v1",
     ],
 };
 
@@ -217,6 +218,16 @@ mod tests {
             "network_policy": "bandcamp-public-v1",
         });
         let revision = accepted_for_manifest(&manifest).expect("Bandcamp v2 policy must resolve");
+        assert_eq!(revision.version, "2.0.0");
+    }
+
+    #[test]
+    fn accepts_exact_v2_facebook_policy() {
+        let manifest = serde_json::json!({
+            "abi": {"package": "component:media-url-resolver", "version": "2.0.0", "world": "media-url-resolver"},
+            "network_policy": "facebook-public-v1",
+        });
+        let revision = accepted_for_manifest(&manifest).expect("Facebook v2 policy must resolve");
         assert_eq!(revision.version, "2.0.0");
     }
 

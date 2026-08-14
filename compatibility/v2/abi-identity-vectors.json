@@ -6,8 +6,13 @@
       "package": "component:media-url-resolver",
       "version": "2.0.0",
       "world": "media-url-resolver",
-      "imports": ["https-client"],
-      "operations": ["get", "post-public-graphql"],
+      "imports": [
+        "https-client"
+      ],
+      "operations": [
+        "get",
+        "post-public-graphql"
+      ],
       "policy": "instagram-public-v1"
     },
     {
@@ -15,22 +20,95 @@
       "package": "component:media-url-resolver",
       "version": "2.0.0",
       "world": "media-url-resolver",
-      "imports": ["https-client"],
-      "operations": ["get"],
+      "imports": [
+        "https-client"
+      ],
+      "operations": [
+        "get"
+      ],
       "policy": "tiktok-public-v1"
+    },
+    {
+      "name": "exact-v2-facebook-tahoe-policy",
+      "package": "component:media-url-resolver",
+      "version": "2.0.0",
+      "world": "media-url-resolver",
+      "imports": [
+        "https-client"
+      ],
+      "operations": [
+        "get",
+        "post-tahoe"
+      ],
+      "policy": "facebook-public-v1"
     }
   ],
   "invalid": [
-    {"name": "v1-version", "field": "version", "value": "1.0.0"},
-    {"name": "wrong-world", "field": "world", "value": "content-resolver"},
-    {"name": "missing-import", "field": "imports", "value": []},
-    {"name": "generic-post", "field": "operations", "value": ["get", "post"]},
-    {"name": "extra-operation", "field": "operations", "value": ["get", "post-public-graphql", "request"]},
-    {"name": "wrong-endpoint", "field": "graphql_endpoint", "value": "https://api.instagram.com/graphql"},
-    {"name": "deceptive-host", "field": "allowed_hosts", "value": ["instagram.com.example.org"]},
-    {"name": "wildcard-host", "field": "allowed_hosts", "value": ["*.instagram.com"]},
-    {"name": "unbounded-body", "field": "limits.response_body_bytes", "value": null},
-    {"name": "wrong-policy", "field": "policy", "value": "instagram-private-v1"},
-    {"name": "wrong-wit-hash", "field": "abi.wit_sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}
+    {
+      "name": "v1-version",
+      "field": "version",
+      "value": "1.0.0"
+    },
+    {
+      "name": "wrong-world",
+      "field": "world",
+      "value": "content-resolver"
+    },
+    {
+      "name": "missing-import",
+      "field": "imports",
+      "value": []
+    },
+    {
+      "name": "generic-post",
+      "field": "operations",
+      "value": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "name": "extra-operation",
+      "field": "operations",
+      "value": [
+        "get",
+        "post-public-graphql",
+        "request"
+      ]
+    },
+    {
+      "name": "wrong-endpoint",
+      "field": "graphql_endpoint",
+      "value": "https://api.instagram.com/graphql"
+    },
+    {
+      "name": "deceptive-host",
+      "field": "allowed_hosts",
+      "value": [
+        "instagram.com.example.org"
+      ]
+    },
+    {
+      "name": "wildcard-host",
+      "field": "allowed_hosts",
+      "value": [
+        "*.instagram.com"
+      ]
+    },
+    {
+      "name": "unbounded-body",
+      "field": "limits.response_body_bytes",
+      "value": null
+    },
+    {
+      "name": "wrong-policy",
+      "field": "policy",
+      "value": "instagram-private-v1"
+    },
+    {
+      "name": "wrong-wit-hash",
+      "field": "abi.wit_sha256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
   ]
 }

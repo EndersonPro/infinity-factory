@@ -103,3 +103,27 @@ fn staging_rejects_fixture_bytes_not_bound_to_catalog() {
     );
     fs::remove_dir_all(root).expect("temporary root must be removed");
 }
+
+#[test]
+fn factory_catalog_registers_facebook_public_resolver() {
+    let catalog: Value = serde_json::from_slice(
+        &fs::read(root().join("factory/bex-factory.json")).expect("catalog must exist"),
+    )
+    .expect("catalog must be JSON");
+    let facebook = catalog["plugins"]
+        .as_array()
+        .expect("plugins must be an array")
+        .iter()
+        .find(|plugin| plugin["id"] == "media-url-resolver.infinity-factory.facebook")
+        .expect("facebook resolver must be registered");
+
+    assert_eq!(facebook["name"], "Facebook Public Resolver");
+    assert_eq!(facebook["type"], "media-url-resolver");
+    assert_eq!(facebook["version"], "2");
+    assert_eq!(facebook["asset_name"], "facebook.bex");
+    assert!(facebook["asset_size"].as_u64().is_some_and(|size| size > 0));
+    assert_eq!(facebook["asset_sha256"].as_str().map(str::len), Some(64));
+    assert_eq!(facebook["wit"]["package"], "component:media-url-resolver");
+    assert_eq!(facebook["wit"]["version"], "2.0.0");
+    assert_eq!(facebook["wit"]["world"], "media-url-resolver");
+}

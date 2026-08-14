@@ -161,6 +161,7 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
             let policy_static = match policy {
                 "instagram-public-v1" => "instagram-public-v1",
                 "bandcamp-public-v1" => "bandcamp-public-v1",
+                "facebook-public-v1" => "facebook-public-v1",
                 _ => return Err(HostError::Package),
             };
             Ok(PolicyIdentity {
