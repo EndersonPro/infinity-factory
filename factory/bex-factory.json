@@ -32,8 +32,8 @@
     },
     {
       "asset_name": "facebook.bex",
-      "asset_sha256": "476f8858d25c024088fa399c5b3f2931f8058d0ba4b2d6319b539172b8f21107",
-      "asset_size": 117755,
+      "asset_sha256": "32760a079951ba12df3b20791e0d4d3f14fd17ad91b732b3be615c68f907820f",
+      "asset_size": 117778,
       "id": "media-url-resolver.infinity-factory.facebook",
       "name": "Facebook Public Resolver",
       "type": "media-url-resolver",

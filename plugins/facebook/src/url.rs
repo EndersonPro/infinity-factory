@@ -52,18 +52,27 @@ fn valid_video_id(id: &str) -> bool {
         })
 }
 
+/// `web.facebook.com` is the mobile-web hop Facebook's edge bounces a
+/// logged-out GET through and back (verified live — same pair the host
+/// admits in `rust/src/host.rs::is_canonical_facebook_get_url`); the host
+/// hands the guest whichever of the two authorities it actually landed on.
 fn authority_allowed(authority: &str) -> bool {
-    matches!(authority, "www.facebook.com" | "facebook.com")
+    matches!(
+        authority,
+        "www.facebook.com" | "web.facebook.com" | "facebook.com"
+    )
 }
 
 /// Classify a source URL as a canonical public Facebook video page (spec Req 1).
 ///
 /// Admits `/{user}/videos/{id}/`, `/watch/?v={id}`, `/{user}/reels/{id}/`,
-/// `/{user}/reel/{id}/`, and `/reel/{id}/`. Rejects posts, groups, stories,
-/// `facebook:{id}`, `/video.php`, `/plugins/video.php`, embeds, non-`www` hosts
-/// (`m.`, `mbasic.`, `web.`), userinfo, ports, and fragments before any host
-/// call. The canonical form always normalises the authority to `www.facebook`
-/// and carries the extracted video id for the Tahoe target.
+/// `/{user}/reel/{id}/`, and `/reel/{id}/` on `www.facebook.com` or
+/// `web.facebook.com`. Rejects posts, groups, stories, `facebook:{id}`,
+/// `/video.php`, `/plugins/video.php`, embeds, other non-canonical hosts
+/// (`m.`, `mbasic.`), userinfo, ports, and fragments before any host call.
+/// The canonical form preserves the input's own authority — forcing it to a
+/// fixed one would just re-trigger the same edge bounce — and carries the
+/// extracted video id for the Tahoe target.
 pub fn classify_url(source: &str) -> Result<CanonicalUrl, UrlError> {
     if source.is_empty() || source.len() > bounds::URL || !source.is_ascii() || source.contains('#')
     {
@@ -77,6 +86,13 @@ pub fn classify_url(source: &str) -> Result<CanonicalUrl, UrlError> {
     if !authority_allowed(authority) || authority.contains('@') || authority.contains(':') {
         return Err(UrlError::Invalid);
     }
+    // The apex is not one of the two authorities the host's edge bounces a
+    // GET between, so it carries no landing spot of its own to preserve.
+    let authority = if authority == "facebook.com" {
+        "www.facebook.com"
+    } else {
+        authority
+    };
     let (path, query) = path_and_query
         .split_once('?')
         .map_or((path_and_query, None), |(path, query)| (path, Some(query)));
@@ -94,7 +110,7 @@ pub fn classify_url(source: &str) -> Result<CanonicalUrl, UrlError> {
             return Err(UrlError::Invalid);
         }
         return Ok(CanonicalUrl {
-            url: format!("https://www.facebook.com/watch/?v={id}"),
+            url: format!("https://{authority}/watch/?v={id}"),
             video_id: id.into(),
         });
     }
@@ -113,10 +129,10 @@ pub fn classify_url(source: &str) -> Result<CanonicalUrl, UrlError> {
         return Err(UrlError::Invalid);
     }
     let canonical = match family {
-        "videos" => format!("https://www.facebook.com/{user}/videos/{id}/"),
-        "reels" => format!("https://www.facebook.com/{user}/reels/{id}/"),
-        "reel" if user.is_empty() => format!("https://www.facebook.com/reel/{id}/"),
-        "reel" => format!("https://www.facebook.com/{user}/reel/{id}/"),
+        "videos" => format!("https://{authority}/{user}/videos/{id}/"),
+        "reels" => format!("https://{authority}/{user}/reels/{id}/"),
+        "reel" if user.is_empty() => format!("https://{authority}/reel/{id}/"),
+        "reel" => format!("https://{authority}/{user}/reel/{id}/"),
         _ => return Err(UrlError::Invalid),
     };
     Ok(CanonicalUrl {
