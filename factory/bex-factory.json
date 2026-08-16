@@ -32,12 +32,12 @@
     },
     {
       "asset_name": "facebook.bex",
-      "asset_sha256": "33b1f20fc4f39421f4dd33576083d5f88ff3e2293629a10ff421f9e0bf8d4e59",
-      "asset_size": 117769,
+      "asset_sha256": "b4f700cc05f9385535b7f1c6e8005a88aaf81ca07baeae10469256ac4f85e80e",
+      "asset_size": 118475,
       "id": "media-url-resolver.infinity-factory.facebook",
       "name": "Facebook Public Resolver",
       "type": "media-url-resolver",
-      "version": "3",
+      "version": "4",
       "wit": {
         "package": "component:media-url-resolver",
         "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",

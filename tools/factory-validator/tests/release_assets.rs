@@ -119,7 +119,7 @@ fn factory_catalog_registers_facebook_public_resolver() {
 
     assert_eq!(facebook["name"], "Facebook Public Resolver");
     assert_eq!(facebook["type"], "media-url-resolver");
-    assert_eq!(facebook["version"], "3");
+    assert_eq!(facebook["version"], "4");
     assert_eq!(facebook["asset_name"], "facebook.bex");
     assert!(facebook["asset_size"].as_u64().is_some_and(|size| size > 0));
     assert_eq!(facebook["asset_sha256"].as_str().map(str::len), Some(64));

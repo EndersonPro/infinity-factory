@@ -9,7 +9,11 @@ const LOGIN_MARKERS: [&str; 4] = [
 ];
 
 const SCRIPT_END: &str = "</script>";
-const DATA_SJS_ATTR: &str = "data-sjs=\"";
+/// `data-sjs` is a bare boolean attribute, not `data-sjs="..."` (verified
+/// live 2026-08-16: `<script type="application/json"  data-content-len="82"
+/// data-sjs>{"require":...`); yt-dlp's own `facebook.py` extractor regex
+/// (`data-sjs>({.*?ScheduledServerJS.*?})</script>`) confirms the same shape.
+const DATA_SJS_MARKER: &str = "data-sjs>";
 
 /// True when any Facebook login-wall marker is present in the page HTML
 /// (spec Req 6 scenarios). Detection precedes any progressive/Tahoe parsing.
@@ -17,20 +21,15 @@ pub fn is_login_wall(html: &str) -> bool {
     LOGIN_MARKERS.iter().any(|marker| html.contains(marker))
 }
 
-/// Extract the inner JSON text of every `<script ... data-sjs="..."> ... </script>`
-/// block in the page (spec Req 3). The JSON is the script TEXT content, not the
-/// attribute value; malformed JSON is surfaced as a `malformed-response` outcome
-/// by the payload layer, not here.
+/// Extract the inner JSON text of every `<script ... data-sjs> ... </script>`
+/// block in the page (spec Req 3). The JSON is the script TEXT content;
+/// malformed JSON is surfaced as a `malformed-response` outcome by the
+/// payload layer, not here.
 pub fn extract_data_sjs(html: &str) -> Vec<String> {
     let mut blocks = Vec::new();
     let mut search = 0usize;
-    while let Some(relative) = html[search..].find(DATA_SJS_ATTR) {
-        let tag_start = search + relative;
-        let after_attr = &html[tag_start + DATA_SJS_ATTR.len()..];
-        let Some(close) = after_attr.find('>') else {
-            break;
-        };
-        let inner_start = tag_start + DATA_SJS_ATTR.len() + close + 1;
+    while let Some(relative) = html[search..].find(DATA_SJS_MARKER) {
+        let inner_start = search + relative + DATA_SJS_MARKER.len();
         let Some(end_rel) = html[inner_start..].find(SCRIPT_END) else {
             break;
         };
