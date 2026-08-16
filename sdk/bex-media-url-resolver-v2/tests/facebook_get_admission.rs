@@ -68,6 +68,20 @@ fn admits_facebook_identifier_and_user_boundaries() {
     }
 }
 
+/// The `web` mobile-web hop Facebook's edge bounces a logged-out GET through
+/// (verified live) is an equally canonical authority to `www`, not a
+/// look-alike host.
+#[test]
+fn admits_the_web_facebook_authority_alongside_www() {
+    for url in CANONICAL_FORMS.map(|url| url.replacen("www.facebook.com", "web.facebook.com", 1)) {
+        assert!(validate_get_request(&get(&url)).is_ok(), "rejected {url}");
+        assert!(
+            validate_https_response(&response(&url)).is_ok(),
+            "rejected {url}"
+        );
+    }
+}
+
 #[test]
 fn refuses_non_exact_facebook_authorities() {
     for authority in [

@@ -108,12 +108,15 @@ fn x_syndication_authority(authority: &str) -> bool {
 fn tiktok_authority(authority: &str) -> bool {
     authority == "www.tiktok.com"
 }
-/// The Facebook resolver emits only this canonical public-page authority.
+/// The two canonical public-page authorities the host admits: `www` and the
+/// `web` mobile-web hop Facebook's edge bounces a logged-out GET through
+/// (verified live — see `rust/src/host.rs::is_canonical_facebook_get_url` in
+/// the host repository for the paired admission logic).
 ///
-/// Matching the literal protects the shared SDK gate from accidentally
+/// Matching the literal set protects the shared SDK gate from accidentally
 /// granting the apex, mobile hosts, or suffix look-alikes.
 fn facebook_authority(authority: &str) -> bool {
-    authority == "www.facebook.com"
+    authority == "www.facebook.com" || authority == "web.facebook.com"
 }
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
