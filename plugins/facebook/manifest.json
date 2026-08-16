@@ -2,7 +2,7 @@
   "manifest_version": "1.0",
   "id": "media-url-resolver.infinity-factory.facebook",
   "name": "Facebook Public Resolver",
-  "version": "2",
+  "version": "3",
   "type": "media-url-resolver",
   "description": "Deterministic resolver for public, logged-out Facebook video/reel media via data-sjs progressive URLs with Tahoe fallback.",
   "publisher": {"name": "Infinity Factory", "url": null, "contact": null, "key_id": null},
