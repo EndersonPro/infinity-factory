@@ -51,7 +51,7 @@ const ALLOWED_FIELDS: &[&str] = &[
 /// Bandcamp both bind the canonical v2 WIT digest; the host composes the
 /// Bandcamp identity itself without importing any canonical Bandcamp files.
 pub struct PolicyIdentity {
-    pub version: &'static str,
+    pub version: String,
     pub package: &'static str,
     pub abi_version: &'static str,
     pub world: &'static str,
@@ -113,7 +113,7 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
         .ok_or(HostError::Package)?;
     let version = manifest["version"]
         .as_str()
-        .filter(|v| !v.is_empty())
+        .filter(|v| !v.is_empty() && v.bytes().all(|b| b.is_ascii_digit()))
         .ok_or(HostError::Package)?;
     if let Some(map) = manifest.as_object()
         && map
@@ -122,13 +122,18 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
     {
         return Err(HostError::Package);
     }
-    match version {
-        "1" => {
-            if manifest.get("abi").is_some() {
+    // The manifest's own `version` is the plugin's free-running release
+    // counter (instagram/bandcamp/facebook stayed at "2"; tiktok/youtube have
+    // since bumped to "3" for content-only fixes) — it is not the WIT/ABI
+    // generation, which is fixed per shape below and reported separately as
+    // `wit.version`. Dispatch on the `abi` block's presence, not the digit.
+    match manifest.get("abi") {
+        None => {
+            if version != "1" {
                 return Err(HostError::Package);
             }
             Ok(PolicyIdentity {
-                version: "1",
+                version: version.to_string(),
                 package: "component:media-url-resolver",
                 abi_version: "1.0.0",
                 world: "media-url-resolver",
@@ -138,7 +143,7 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
                 export: "component:media-url-resolver/resolver@1.0.0",
             })
         }
-        "2" => {
+        Some(_) => {
             let abi = manifest["abi"].as_object().ok_or(HostError::Package)?;
             if abi["package"].as_str() != Some("component:media-url-resolver") {
                 return Err(HostError::Package);
@@ -165,7 +170,7 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
                 _ => return Err(HostError::Package),
             };
             Ok(PolicyIdentity {
-                version: "2",
+                version: version.to_string(),
                 package: "component:media-url-resolver",
                 abi_version: "2.0.0",
                 world: "media-url-resolver",
@@ -175,7 +180,6 @@ pub fn policy_for_manifest(manifest: &Value) -> Result<PolicyIdentity, HostError
                 export: "component:media-url-resolver/resolver@2.0.0",
             })
         }
-        _ => Err(HostError::Package),
     }
 }
 
@@ -370,7 +374,7 @@ fn build(
     let payload = PackagePayload {
         id,
         kind: "media-url-resolver".into(),
-        version: identity.version.into(),
+        version: identity.version,
         asset_name,
         asset_sha256: hex(bytes),
         asset_size: bytes.len() as u64,
