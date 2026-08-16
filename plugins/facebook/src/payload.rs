@@ -197,9 +197,19 @@ pub fn parse_tahoe_response(body: &[u8]) -> Result<Vec<String>, ResolverError> {
     let mut urls = Vec::new();
     if let Some(video_data) = find_object_with_keys(
         &value,
-        &["sd_src", "hd_src", "sd_src_no_ratelimit", "hd_src_no_ratelimit"],
+        &[
+            "sd_src",
+            "hd_src",
+            "sd_src_no_ratelimit",
+            "hd_src_no_ratelimit",
+        ],
     ) {
-        for key in ["sd_src", "hd_src", "sd_src_no_ratelimit", "hd_src_no_ratelimit"] {
+        for key in [
+            "sd_src",
+            "hd_src",
+            "sd_src_no_ratelimit",
+            "hd_src_no_ratelimit",
+        ] {
             if let Some(url) = video_data.get(key).and_then(Value::as_str) {
                 collect_one(url, &mut urls);
             }

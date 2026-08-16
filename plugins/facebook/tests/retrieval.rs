@@ -85,7 +85,9 @@ fn get_then_progressive_urls_resolve_as_candidates_with_metadata() {
     assert_eq!(items.len(), 2);
     assert_eq!(items[0].stream.url, "https://video.example.invalid/sd.mp4");
     assert_eq!(items[1].stream.url, "https://video.example.invalid/hd.mp4");
-    let metadata = response.metadata.expect("metadata emitted for a valid video");
+    let metadata = response
+        .metadata
+        .expect("metadata emitted for a valid video");
     assert_eq!(metadata.title.as_deref(), Some("Public video"));
     assert_eq!(metadata.author.as_deref(), Some("Zuck"));
     assert_eq!(
@@ -99,7 +101,8 @@ fn get_then_progressive_urls_resolve_as_candidates_with_metadata() {
 
 #[test]
 fn get_without_progressive_falls_back_to_tahoe_sd_hd_candidates() {
-    let mut client = MockHttpsClient::new(vec![get(FB_TAHOE_PAGE.as_bytes()), tahoe(FB_TAHOE_JSON)]);
+    let mut client =
+        MockHttpsClient::new(vec![get(FB_TAHOE_PAGE.as_bytes()), tahoe(FB_TAHOE_JSON)]);
     let response = resolve_public(&mut client, URL).expect("tahoe fallback resolves");
     let Resolution::Candidates(items) = response.resolution else {
         panic!("expected candidates from tahoe sd_src/hd_src");

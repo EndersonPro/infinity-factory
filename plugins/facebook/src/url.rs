@@ -65,10 +65,7 @@ fn authority_allowed(authority: &str) -> bool {
 /// call. The canonical form always normalises the authority to `www.facebook`
 /// and carries the extracted video id for the Tahoe target.
 pub fn classify_url(source: &str) -> Result<CanonicalUrl, UrlError> {
-    if source.is_empty()
-        || source.len() > bounds::URL
-        || !source.is_ascii()
-        || source.contains('#')
+    if source.is_empty() || source.len() > bounds::URL || !source.is_ascii() || source.contains('#')
     {
         return Err(UrlError::Invalid);
     }

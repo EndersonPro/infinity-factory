@@ -1,4 +1,6 @@
-use bex_media_url_resolver_v2::{EphemeralFbDtsg, TahoeRequest, build_tahoe_request, validate_tahoe_request};
+use bex_media_url_resolver_v2::{
+    EphemeralFbDtsg, TahoeRequest, build_tahoe_request, validate_tahoe_request,
+};
 
 const TAHOE_URL: &str = "https://www.facebook.com/video/tahoe/async/10107927396957931/";
 

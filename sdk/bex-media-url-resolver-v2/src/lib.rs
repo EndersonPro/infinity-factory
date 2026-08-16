@@ -108,6 +108,13 @@ fn x_syndication_authority(authority: &str) -> bool {
 fn tiktok_authority(authority: &str) -> bool {
     authority == "www.tiktok.com"
 }
+/// The Facebook resolver emits only this canonical public-page authority.
+///
+/// Matching the literal protects the shared SDK gate from accidentally
+/// granting the apex, mobile hosts, or suffix look-alikes.
+fn facebook_authority(authority: &str) -> bool {
+    authority == "www.facebook.com"
+}
 fn parsed_https(value: &str) -> Option<Url> {
     if value.len() > bounds::URL || !value.starts_with("https://") {
         return None;
@@ -127,7 +134,8 @@ fn parsed_https(value: &str) -> Option<Url> {
             || bandcamp_artist(authority).is_some()
             || youtube_authority(authority)
             || x_syndication_authority(authority)
-            || tiktok_authority(authority)))
+            || tiktok_authority(authority)
+            || facebook_authority(authority)))
     .then_some(parsed)
 }
 /// Exact `/watch?v=<id>` query shape: a single `v` parameter carrying an
@@ -216,6 +224,51 @@ fn valid_tiktok_user_label(label: &str) -> bool {
 fn valid_tiktok_video_id(id: &str) -> bool {
     !id.is_empty() && id.len() <= 19 && id.bytes().all(|value| value.is_ascii_digit())
 }
+/// Facebook user label: 1-64 bytes from `[A-Za-z0-9._-]`.
+fn valid_facebook_user_label(label: &str) -> bool {
+    !label.is_empty()
+        && label.len() <= 64
+        && label
+            .bytes()
+            .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'.' | b'_' | b'-'))
+}
+/// Facebook public-video ids are decimal values or canonical `pfbid` values.
+fn valid_facebook_video_id(id: &str) -> bool {
+    (!id.is_empty() && id.len() <= 64 && id.bytes().all(|value| value.is_ascii_digit()))
+        || (id.len() >= 6
+            && id.len() <= 64
+            && id.starts_with("pfbid")
+            && id[5..]
+                .bytes()
+                .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-')))
+}
+/// Exact Facebook watch query shape: one `v` parameter and no extras.
+fn valid_facebook_watch_query(query: &str) -> bool {
+    query
+        .strip_prefix("v=")
+        .is_some_and(valid_facebook_video_id)
+}
+fn valid_facebook_get_url(url: &Url) -> bool {
+    let parts: Vec<&str> = url.path().split('/').collect();
+    match url.query() {
+        Some(query) => {
+            parts.len() == 3
+                && parts[0].is_empty()
+                && parts[1] == "watch"
+                && parts[2].is_empty()
+                && valid_facebook_watch_query(query)
+        }
+        None => match parts.as_slice() {
+            ["", user, "videos", id, ""]
+            | ["", user, "reels", id, ""]
+            | ["", user, "reel", id, ""] => {
+                valid_facebook_user_label(user) && valid_facebook_video_id(id)
+            }
+            ["", "reel", id, ""] => valid_facebook_video_id(id),
+            _ => false,
+        },
+    }
+}
 fn valid_get_url(value: &str) -> bool {
     let Some(url) = parsed_https(value) else {
         return false;
@@ -268,6 +321,8 @@ fn valid_get_url(value: &str) -> bool {
             && valid_tiktok_user_label(&parts[1][1..])
             && parts[2] == "video"
             && valid_tiktok_video_id(parts[3])
+    } else if facebook_authority(authority) {
+        valid_facebook_get_url(&url)
     } else {
         false
     }
@@ -409,12 +464,15 @@ pub fn validate_tahoe_request(request: &TahoeRequest) -> Result<(), ResolverErro
         && request.fb_dtsg.bytes().all(|byte| byte.is_ascii_graphic())
         && !request.pkg_cohort.is_empty()
         && request.pkg_cohort.len() <= bounds::PKG_COHORT
-        && request.pkg_cohort.bytes().all(|byte| byte.is_ascii_graphic())
+        && request
+            .pkg_cohort
+            .bytes()
+            .all(|byte| byte.is_ascii_graphic())
         && !request.client_rev.is_empty()
         && request.client_rev.len() <= bounds::CLIENT_REV
         && request.client_rev.bytes().all(|byte| byte.is_ascii_digit()))
-        .then_some(())
-        .ok_or_else(request_error)
+    .then_some(())
+    .ok_or_else(request_error)
 }
 pub fn validate_https_response(response: &HttpsResponse) -> Result<(), ResolverError> {
     ((100..=599).contains(&response.status)
@@ -560,7 +618,9 @@ impl HttpsClient for WasmHttpsClient {
     }
     fn post_tahoe(&mut self, request: TahoeCall) -> Result<HttpsResponse, HttpsError> {
         validate_tahoe_request(&request.0).map_err(|_| HttpsError::InvalidRequest)?;
-        checked_response(component::media_url_resolver::https_client::post_tahoe(&request.0))
+        checked_response(component::media_url_resolver::https_client::post_tahoe(
+            &request.0,
+        ))
     }
 }
 

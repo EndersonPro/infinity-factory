@@ -103,31 +103,23 @@ fn rejects_out_of_scope_or_unsafe_urls_before_any_host_call() {
 #[test]
 fn enforces_user_and_identifier_length_boundaries() {
     let max_user = "a".repeat(64);
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/{max_user}/videos/10107927396957931/"
-    ))
-    .is_ok());
+    assert!(
+        classify_url(&format!(
+            "https://www.facebook.com/{max_user}/videos/10107927396957931/"
+        ))
+        .is_ok()
+    );
     let over_user = "a".repeat(65);
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/{over_user}/videos/10107927396957931/"
-    ))
-    .is_err());
+    assert!(
+        classify_url(&format!(
+            "https://www.facebook.com/{over_user}/videos/10107927396957931/"
+        ))
+        .is_err()
+    );
     let max_id = "9".repeat(64);
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/zuck/videos/{max_id}/"
-    ))
-    .is_ok());
+    assert!(classify_url(&format!("https://www.facebook.com/zuck/videos/{max_id}/")).is_ok());
     let over_id = "9".repeat(65);
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/zuck/videos/{over_id}/"
-    ))
-    .is_err());
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/watch/?v={max_id}"
-    ))
-    .is_ok());
-    assert!(classify_url(&format!(
-        "https://www.facebook.com/watch/?v={over_id}"
-    ))
-    .is_err());
+    assert!(classify_url(&format!("https://www.facebook.com/zuck/videos/{over_id}/")).is_err());
+    assert!(classify_url(&format!("https://www.facebook.com/watch/?v={max_id}")).is_ok());
+    assert!(classify_url(&format!("https://www.facebook.com/watch/?v={over_id}")).is_err());
 }

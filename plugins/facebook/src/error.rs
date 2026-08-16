@@ -161,7 +161,10 @@ mod tests {
             status(404).unwrap_err().kind,
             ResolverErrorKind::Unavailable
         );
-        assert_eq!(status(429).unwrap_err().kind, ResolverErrorKind::RateLimited);
+        assert_eq!(
+            status(429).unwrap_err().kind,
+            ResolverErrorKind::RateLimited
+        );
         assert!(status(429).unwrap_err().retryable);
         assert_eq!(
             status(500).unwrap_err().kind,

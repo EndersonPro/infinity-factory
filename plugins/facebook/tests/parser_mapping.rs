@@ -1,7 +1,7 @@
-use bex_media_url_resolver_v2::{ResolverErrorKind, Resolution};
+use bex_media_url_resolver_v2::{Resolution, ResolverErrorKind};
 use facebook::{
-    Media, extract_data_sjs, extract_media, extract_tahoe_tokens, is_login_wall,
-    map_progressive, parse_tahoe_response, unsupported_response,
+    Media, extract_data_sjs, extract_media, extract_tahoe_tokens, is_login_wall, map_progressive,
+    parse_tahoe_response, unsupported_response,
 };
 
 const FB_VIDEO: &str = include_str!("fixtures/fb_video.html");
@@ -80,9 +80,7 @@ fn parses_tahoe_response_after_stripping_prefix() {
     );
     // After stripping the sentinel, malformed JSON maps to malformed-response.
     assert_eq!(
-        parse_tahoe_response(b"for (;;);not-json")
-            .unwrap_err()
-            .kind,
+        parse_tahoe_response(b"for (;;);not-json").unwrap_err().kind,
         ResolverErrorKind::MalformedResponse
     );
 }
@@ -110,7 +108,10 @@ fn reels_resolve_via_short_form_video_context() {
     let media = extract_media(&extract_data_sjs(reel))
         .expect("parses")
         .expect("media present");
-    assert_eq!(media.progressive, ["https://video.example.invalid/reel.mp4"]);
+    assert_eq!(
+        media.progressive,
+        ["https://video.example.invalid/reel.mp4"]
+    );
 }
 
 #[test]
@@ -126,13 +127,17 @@ fn malformed_data_sjs_block_maps_to_malformed_response() {
 #[test]
 fn absent_data_sjs_or_absent_media_yield_no_media() {
     assert!(extract_data_sjs("<html></html>").is_empty());
-    assert!(extract_media(&extract_data_sjs("<html></html>"))
-        .expect("parses")
-        .is_none());
+    assert!(
+        extract_media(&extract_data_sjs("<html></html>"))
+            .expect("parses")
+            .is_none()
+    );
     let no_media = r#"<script type="application/json" data-sjs="ScheduledServerJS">{"require":[["ScheduledServerJS","handle",[]]]}</script>"#;
-    assert!(extract_media(&extract_data_sjs(no_media))
-        .expect("parses")
-        .is_none());
+    assert!(
+        extract_media(&extract_data_sjs(no_media))
+            .expect("parses")
+            .is_none()
+    );
 }
 
 #[test]

@@ -95,7 +95,7 @@ pub fn resolve_public(
                 Err(_) => {
                     return Ok(unsupported_response(
                         "public Facebook Tahoe request rejected by policy",
-                    ))
+                    ));
                 }
             };
             let tahoe = client.post_tahoe(call).map_err(error::transport)?;

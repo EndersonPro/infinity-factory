@@ -18,14 +18,10 @@ pub use url::{CanonicalUrl, classify_url};
 /// `Result<ResolveResponse, ResolverError>` shape the ABI v2 `Guest` trait
 /// requires, so no additional request rewriting is needed here.
 ///
-/// Deliberately NOT called here: `validate_resolver_request` and
-/// `validate_https_response`. Both reuse `valid_get_url`/`parsed_https`, whose
-/// authority allow-list does not yet include `www.facebook.com` — that grant
-/// ships with the separate `HostPolicy::FacebookPublicV1` host change
-/// (`proposal.md:29-43`; `exploration.md:70-78`). Calling either generic gate
-/// first would reject every valid Facebook source URL before `resolve_public`
-/// could run. The facebook classifier enforces URL shape itself, and response
-/// safety is still gated at the end via `validate_resolver_response`.
+/// `WasmHttpsClient` admits each canonical Facebook GET through the shared SDK
+/// policy before host I/O. The plugin classifier still validates its input
+/// grammar independently, and response safety remains gated at the end via
+/// `validate_resolver_response`.
 #[cfg(target_arch = "wasm32")]
 pub struct Component;
 
