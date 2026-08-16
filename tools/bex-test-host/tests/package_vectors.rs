@@ -86,7 +86,7 @@ fn inspect_real_facebook_package_with_catalog_succeeds() {
     let report =
         inspect_package(&pkg("facebook.bex"), Some(&catalog())).expect("facebook must inspect");
     let result = report.result.expect("success must carry result");
-    assert_eq!(result.package.version, "2");
+    assert_eq!(result.package.version, "3");
     assert_eq!(
         result.package.network_policy.as_deref(),
         Some("facebook-public-v1")
