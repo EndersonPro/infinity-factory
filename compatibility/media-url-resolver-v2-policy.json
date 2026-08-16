@@ -5,26 +5,63 @@
     "package": "component:media-url-resolver",
     "version": "2.0.0",
     "world": "media-url-resolver",
-    "wit_sha256": "20d766bc64ab082e6dc029e5181f6646c10088f09b8e032b0a9a9b2daa4541d5"
+    "wit_sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8"
   },
-  "operations": ["get", "post-public-graphql"],
-  "allowed_hosts": ["instagram.com", "www.instagram.com"],
-  "get_path_families": ["p", "reel", "reels", "tv"],
+  "operations": [
+    "get",
+    "post-public-graphql"
+  ],
+  "allowed_hosts": [
+    "instagram.com",
+    "www.instagram.com"
+  ],
+  "get_path_families": [
+    "p",
+    "reel",
+    "reels",
+    "tv"
+  ],
   "graphql_endpoint": "https://www.instagram.com/api/graphql",
-  "get_headers": ["accept", "accept-language"],
+  "get_headers": [
+    "accept",
+    "accept-language"
+  ],
   "host_injected_graphql_headers": [
-    "accept", "accept-language", "content-length", "content-type", "cookie",
-    "origin", "referer", "user-agent", "x-asbd-id", "x-fb-friendly-name",
-    "x-fb-lsd", "x-ig-app-id"
+    "accept",
+    "accept-language",
+    "content-length",
+    "content-type",
+    "cookie",
+    "origin",
+    "referer",
+    "user-agent",
+    "x-asbd-id",
+    "x-fb-friendly-name",
+    "x-fb-lsd",
+    "x-ig-app-id"
   ],
   "response_headers": [
-    "cache-control", "content-length", "content-type", "etag",
-    "last-modified", "retry-after"
+    "cache-control",
+    "content-length",
+    "content-type",
+    "etag",
+    "last-modified",
+    "retry-after"
   ],
   "graphql_form_fields": [
-    "__a", "__ccg", "__comet_req", "__req", "__user", "av", "doc_id",
-    "dpr", "fb_api_caller_class", "fb_api_req_friendly_name", "lsd",
-    "server_timestamps", "variables"
+    "__a",
+    "__ccg",
+    "__comet_req",
+    "__req",
+    "__user",
+    "av",
+    "doc_id",
+    "dpr",
+    "fb_api_caller_class",
+    "fb_api_req_friendly_name",
+    "lsd",
+    "server_timestamps",
+    "variables"
   ],
   "limits": {
     "url_bytes": 2048,
@@ -51,11 +88,22 @@
   },
   "cookies": {
     "ownership": "host-opaque",
-    "scope": ["component-instance", "package-digest", "network-policy"],
+    "scope": [
+      "component-instance",
+      "package-digest",
+      "network-policy"
+    ],
     "authenticated_sessions": false
   },
   "redacted": [
-    "authorization", "cookie", "set-cookie", "lsd", "variables",
-    "form-body", "response-body", "query-values", "transport-diagnostics"
+    "authorization",
+    "cookie",
+    "set-cookie",
+    "lsd",
+    "variables",
+    "form-body",
+    "response-body",
+    "query-values",
+    "transport-diagnostics"
   ]
 }

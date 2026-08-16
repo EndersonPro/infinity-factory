@@ -82,6 +82,7 @@ fn abi_v2_policy_identity() {
         "interface https-client",
         "get: func",
         "post-public-graphql: func",
+        "post-tahoe: func",
         "import https-client;",
         "export resolver;",
     ] {
@@ -89,12 +90,12 @@ fn abi_v2_policy_identity() {
     }
     assert!(!v2.contains("method:"));
     assert_eq!(v2.matches("import ").count(), 1);
-    assert_eq!(v2.matches(": func").count(), 3);
+    assert_eq!(v2.matches(": func").count(), 4);
 
     let policy_text = read("compatibility/media-url-resolver-v2-policy.json");
     assert_eq!(
         hex(&policy_text),
-        "2fa56985022a3ab2979f007b06a5d35850622a7734d572a4fc966434678e74c0"
+        "4ca0dbfbe0816df619d668a7ce4ba5cc0e718b7b2ed1a143304abfe5896c2e35"
     );
     let policy: Value = serde_json::from_str(&policy_text).expect("policy must be JSON");
     assert_policy(&policy);
@@ -109,7 +110,7 @@ fn abi_v2_policy_identity() {
     let vectors_text = read("compatibility/v2/abi-identity-vectors.json");
     assert_eq!(
         hex(&vectors_text),
-        "c3432c9049edf50f5461a04960261bdbc73f23b0473c8c9b91f42585a75998ba"
+        "a8de53a71a3ef0af6d717de7b2101a1de2cc9b30c4c2b37b304792b12e5928d3"
     );
     let vectors: Value = serde_json::from_str(&vectors_text).expect("vectors must be JSON");
     assert!(

@@ -10,6 +10,7 @@ members = [
   "plugins/youtube",
   "plugins/x",
   "plugins/tiktok",
+  "plugins/facebook",
 ]
 resolver = "2"
 
