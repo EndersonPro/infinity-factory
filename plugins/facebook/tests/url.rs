@@ -48,6 +48,18 @@ fn admits_canonical_videos_watch_reels_and_reel_shapes() {
         "https://www.facebook.com/zuck/videos/10107927396957931/",
         "10107927396957931",
     );
+    // `web.facebook.com` is the mobile-web hop the host's edge bounces a
+    // logged-out GET through (verified live) and is preserved, not rewritten.
+    ok(
+        "https://web.facebook.com/zuck/videos/10107927396957931/",
+        "https://web.facebook.com/zuck/videos/10107927396957931/",
+        "10107927396957931",
+    );
+    ok(
+        "https://web.facebook.com/watch/?v=10107927396957931",
+        "https://web.facebook.com/watch/?v=10107927396957931",
+        "10107927396957931",
+    );
 }
 
 #[test]
@@ -66,10 +78,10 @@ fn rejects_out_of_scope_or_unsafe_urls_before_any_host_call() {
         "http://www.facebook.com/zuck/videos/10107927396957931/",
         "facebook:10107927396957931",
         "HTTPS://www.facebook.com/zuck/videos/10107927396957931/",
-        // non-www hosts
+        // non-canonical hosts (`web.facebook.com` is admitted — see
+        // `admits_canonical_videos_watch_reels_and_reel_shapes`)
         "https://m.facebook.com/watch/?v=10107927396957931",
         "https://mbasic.facebook.com/watch/?v=10107927396957931",
-        "https://web.facebook.com/zuck/videos/10107927396957931/",
         "https://evil.facebook.com/zuck/videos/10107927396957931/",
         // userinfo / port / fragment
         "https://user@www.facebook.com/zuck/videos/10107927396957931/",
