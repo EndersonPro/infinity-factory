@@ -29,6 +29,8 @@ const DASH_HLS_KEYS: &[&str] = &[
     "dash_manifest_urls",
     "dash_manifests",
     "hls_playlist_urls",
+    // Reels' videoDeliveryLegacyFields wrapper (verified live 2026-08-16).
+    "dash_manifest_url",
 ];
 
 /// Safe HTTPS URL gate reused from the Instagram payload pattern: no userinfo,
@@ -129,6 +131,26 @@ fn follow_playback(creation: Option<&Value>) -> Option<&Map<String, Value>> {
         .as_object()
 }
 
+/// Reels moved every progressive/DASH field (`browser_native_sd_url`,
+/// `browser_native_hd_url`, `dash_manifest_url`, ...) one level deeper, under
+/// `playback_video.videoDeliveryLegacyFields` (verified live 2026-08-16); the
+/// metadata fields `build_media` also reads (`title`, `thumbnail`, ...) stayed
+/// on `playback_video` itself. Merge the wrapper's fields on top so both are
+/// visible to a single `build_media` call without touching what still reads
+/// from `playback_video` directly.
+fn merged_with_legacy_delivery_fields(media_obj: &Map<String, Value>) -> Map<String, Value> {
+    let mut merged = media_obj.clone();
+    if let Some(legacy) = media_obj
+        .get("videoDeliveryLegacyFields")
+        .and_then(Value::as_object)
+    {
+        for (key, value) in legacy {
+            merged.entry(key.clone()).or_insert_with(|| value.clone());
+        }
+    }
+    merged
+}
+
 /// Deep-first search for the first JSON object carrying any of `keys`
 /// (`yt_dlp/extractor/facebook.py` Relay/GraphQL traversal).
 fn find_object_with_keys<'a>(value: &'a Value, keys: &[&str]) -> Option<&'a Map<String, Value>> {
@@ -181,7 +203,9 @@ pub fn extract_media(blocks: &[String]) -> Result<Option<Media>, ResolverError> 
     if let Some(container) = search_blocks(&values, &["creation_story"])
         && let Some(media_obj) = follow_playback(container.get("creation_story"))
     {
-        return Ok(Some(build_media(media_obj)));
+        return Ok(Some(build_media(&merged_with_legacy_delivery_fields(
+            media_obj,
+        ))));
     }
     Ok(None)
 }
