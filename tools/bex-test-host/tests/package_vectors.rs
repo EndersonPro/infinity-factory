@@ -57,7 +57,7 @@ fn inspect_real_instagram_package_with_catalog_succeeds() {
         inspect_package(&pkg("instagram.bex"), Some(&catalog())).expect("instagram must inspect");
     assert_eq!(report.command, Some(Command::Inspect));
     let result = report.result.expect("success must carry result");
-    assert_eq!(result.package.version, "2");
+    assert_eq!(result.package.version, "3");
     assert_eq!(
         result.package.network_policy.as_deref(),
         Some("instagram-public-v1")

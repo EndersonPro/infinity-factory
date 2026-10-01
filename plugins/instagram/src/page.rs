@@ -36,17 +36,24 @@ impl PageState {
         (self.lsd, self.relay)
     }
 }
-fn selected<'a>(html: &'a str, marker: &str) -> Result<Option<&'a str>, PageError> {
-    let mut starts = html.match_indices(marker);
-    let Some((start, _)) = starts.next() else {
-        return Ok(None);
-    };
+/// Selects the optional legacy Relay state script. Relay is only a fallback,
+/// so an ambiguous, unterminated, oversized, or non-object script is treated
+/// as absent rather than failing the mandatory LSD path.
+fn selected_relay(html: &str) -> Option<String> {
+    let mut starts = html.match_indices(RELAY);
+    let (start, _) = starts.next()?;
     if starts.next().is_some() {
-        return Err(PageError::Invalid);
+        return None;
     }
-    let value = &html[start + marker.len()..];
-    let end = value.find(SCRIPT_END).ok_or(PageError::Invalid)?;
-    Ok(Some(&value[..end]))
+    let value = &html[start + RELAY.len()..];
+    let value = &value[..value.find(SCRIPT_END)?];
+    if value.len() > RELAY_BYTES {
+        return None;
+    }
+    serde_json::from_str::<Value>(value)
+        .ok()
+        .filter(Value::is_object)
+        .map(|_| value.to_owned())
 }
 /// Locates the unique `__eqmc` state script, tolerating optional extra
 /// attributes on the opening tag (Instagram now emits a dynamic CSP
@@ -91,15 +98,6 @@ pub fn extract_page_state(body: &[u8]) -> Result<PageState, PageError> {
         .filter(|value| !value.contains(['\"', '\\']))
         .ok_or(PageError::Invalid)?;
     let lsd = EphemeralLsd::new(token.to_owned()).map_err(|_| PageError::Invalid)?;
-    let relay = selected(html, RELAY)?
-        .map(|value| {
-            if value.len() > RELAY_BYTES {
-                return Err(PageError::Invalid);
-            }
-            let parsed: Value = serde_json::from_str(value).map_err(|_| PageError::Invalid)?;
-            parsed.as_object().ok_or(PageError::Invalid)?;
-            Ok(value.to_owned())
-        })
-        .transpose()?;
+    let relay = selected_relay(html);
     Ok(PageState { lsd, relay })
 }

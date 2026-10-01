@@ -145,9 +145,49 @@ fn rejects_missing_duplicate_malformed_or_oversized_page_state() {
     let relay = include_str!("../fixtures/page-relay.html")
         .replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");
     assert!(extract_page_state(format!("{relay}{relay}").as_bytes()).is_err());
+    // Relay is optional: an oversized relay no longer fails the page (see
+    // `treats_ambiguous_or_oversized_relay_as_absent_without_failing_lsd`),
+    // but an oversized mandatory `__eqmc` still does.
     let huge = format!(
-        "<script id=\"__eqmc\" type=\"application/json\">{{\"l\":\"SENSITIVE_SENTINEL\"}}</script><script type=\"application/json\" data-sjs=\"RelayPrefetchedStreamCache\">{{\"x\":\"{}\"}}</script>",
-        "x".repeat(65_536)
+        "<script id=\"__eqmc\" type=\"application/json\">{{\"l\":\"SENSITIVE_SENTINEL\",\"x\":\"{}\"}}</script>",
+        "x".repeat(8_192)
     );
     assert!(extract_page_state(huge.as_bytes()).is_err());
+}
+
+#[test]
+fn treats_ambiguous_or_oversized_relay_as_absent_without_failing_lsd() {
+    let relay = r#"<script type="application/json" data-sjs="RelayPrefetchedStreamCache">{"media":{}}</script>"#;
+    let base = include_str!("../fixtures/page-basic.html")
+        .replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");
+    let oversized = format!(
+        r#"<script type="application/json" data-sjs="RelayPrefetchedStreamCache">{{"x":"{}"}}</script>"#,
+        "x".repeat(65_536)
+    );
+    let unparseable =
+        r#"<script type="application/json" data-sjs="RelayPrefetchedStreamCache">[1,2]</script>"#;
+    let unterminated = r#"<script type="application/json" data-sjs="RelayPrefetchedStreamCache">{"#;
+    for extra in [
+        format!("{relay}{relay}"),
+        oversized,
+        unparseable.to_owned(),
+        unterminated.to_owned(),
+    ] {
+        let page = base.replace("</html>", &format!("{extra}</html>"));
+        let (_, relay) = extract_page_state(page.as_bytes()).unwrap().take();
+        assert!(relay.is_none());
+    }
+}
+
+#[test]
+fn extracts_lsd_from_live_shaped_page_with_bare_data_sjs_relay_text() {
+    // Live post pages mention `RelayPrefetchedStreamCache` twice, but only
+    // inside bare `data-sjs` ScheduledServerJS payloads, never as the legacy
+    // selected tag: the LSD must still extract and relay stays absent.
+    let page = include_str!("../fixtures/page-live-relay.html")
+        .replace("{{EPHEMERAL_LSD}}", "SENSITIVE_SENTINEL");
+    assert_eq!(page.matches("RelayPrefetchedStreamCache").count(), 2);
+    let (lsd, relay) = extract_page_state(page.as_bytes()).unwrap().take();
+    assert_eq!(format!("{lsd:?}"), "[REDACTED]");
+    assert!(relay.is_none());
 }
