@@ -47,12 +47,12 @@
     },
     {
       "asset_name": "instagram.bex",
-      "asset_sha256": "cf9881304bed83e05f0447b66649a215a1c0f39e270aa0861e5792c4115a7099",
-      "asset_size": 123981,
+      "asset_sha256": "90fe6cadb0e3eab95614076e7a0fd0b40673b0c5555a947101660bddf6ec57a9",
+      "asset_size": 126909,
       "id": "media-url-resolver.infinity-factory.instagram",
       "name": "Instagram Public Resolver",
       "type": "media-url-resolver",
-      "version": "2",
+      "version": "3",
       "wit": {
         "package": "component:media-url-resolver",
         "sha256": "5bb4e37f3ce3f765a855c8bb00000661c376c94d7701a966125e722325ee1df8",

@@ -1,6 +1,6 @@
 use bex_media_url_resolver_v2::{
     ExpectedCall, GetRequest, HttpsError, HttpsResponse, MockHttpsClient, PublicGraphqlExpectation,
-    Resolution, ResolverErrorKind,
+    Resolution, ResolverErrorKind, validate_resolver_response,
 };
 use instagram::resolve_public;
 
@@ -198,4 +198,120 @@ fn rejects_partial_duplicate_or_forbidden_fallback() {
     let error = resolve_public(&mut client, URL).unwrap_err();
     assert_eq!(error.kind, ResolverErrorKind::PrivateOrUnavailable);
     assert_eq!(client.observations().len(), 2);
+}
+
+const CURRENT_VIDEO: &[u8] = include_bytes!("../fixtures/graphql-current-video.json");
+const CURRENT_IMAGE: &[u8] = include_bytes!("../fixtures/graphql-current-image.json");
+const CURRENT_CAROUSEL: &[u8] = include_bytes!("../fixtures/graphql-current-carousel.json");
+const AGE_GATED: &[u8] = include_bytes!("../fixtures/graphql-age-gated.json");
+const CDN: &str = "https://instagram.fxxx.fna.fbcdn.net/";
+
+#[test]
+fn maps_current_video_versions_with_null_caption() {
+    let mut client = plan(BASIC, graphql(CURRENT_VIDEO));
+    let result = resolve_public(&mut client, URL).unwrap();
+    let metadata = result.metadata.as_ref().unwrap();
+    assert_eq!(metadata.title, None);
+    assert_eq!(metadata.author.as_deref(), Some("public_user"));
+    assert_eq!(
+        metadata.thumbnail_url.as_deref(),
+        Some(format!("{CDN}v/t51/video-thumb.jpg").as_str())
+    );
+    let Resolution::Direct(stream) = result.resolution else {
+        panic!("expected direct")
+    };
+    assert_eq!(stream.url, format!("{CDN}o1/v/t2/video-best.mp4"));
+    assert_eq!(stream.mime_type.as_deref(), Some("video/mp4"));
+    assert!(client.verify().is_ok());
+}
+
+#[test]
+fn maps_current_carousel_media_in_order() {
+    let mut client = plan(BASIC, graphql(CURRENT_CAROUSEL));
+    let result = resolve_public(&mut client, URL).unwrap();
+    assert_eq!(
+        result.metadata.as_ref().unwrap().title.as_deref(),
+        Some("Current carousel")
+    );
+    let Resolution::Candidates(items) = result.resolution else {
+        panic!("expected candidates")
+    };
+    assert_eq!(
+        items
+            .iter()
+            .map(|item| item.stream.url.as_str())
+            .collect::<Vec<_>>(),
+        [
+            format!("{CDN}v/t51/first.jpg"),
+            format!("{CDN}o1/v/t2/second.mp4")
+        ]
+    );
+    assert!(client.verify().is_ok());
+}
+
+#[test]
+fn returns_unsupported_for_current_single_image() {
+    let mut client = plan(BASIC, graphql(CURRENT_IMAGE));
+    let result = resolve_public(&mut client, URL).unwrap();
+    assert!(matches!(result.resolution, Resolution::Unsupported(_)));
+    assert_eq!(
+        result.metadata.unwrap().thumbnail_url.as_deref(),
+        Some(format!("{CDN}v/t51/image.jpg").as_str())
+    );
+}
+
+#[test]
+fn maps_gating_ruling_to_private_without_relay_fallback() {
+    let mut client = plan(RELAY, graphql(AGE_GATED));
+    let error = resolve_public(&mut client, URL).unwrap_err();
+    assert_eq!(error.kind, ResolverErrorKind::PrivateOrUnavailable);
+    assert!(!error.retryable);
+    assert_eq!(
+        error.safe_message,
+        "Instagram requires a signed-in account for this post"
+    );
+    assert!(client.verify().is_ok());
+}
+
+#[test]
+fn normalizes_long_multiline_real_world_captions_into_a_valid_title() {
+    // Live captions are multi-line and routinely exceed the 256-byte SDK
+    // title bound; both would make the guest's response validation reject
+    // the post. Whitespace runs collapse to one space and the result
+    // shortens on a char boundary.
+    let caption = r"Tres Métodos de Finanzas en pareja\n\n\tCuando tomas la decisión ".repeat(8);
+    let body = String::from_utf8(CURRENT_CAROUSEL.to_vec())
+        .unwrap()
+        .replace("Current carousel", &caption);
+    let mut client = plan(BASIC, graphql(body.as_bytes()));
+    let result = resolve_public(&mut client, URL).unwrap();
+    assert!(validate_resolver_response(&result).is_ok());
+    let title = result.metadata.unwrap().title.unwrap();
+    assert!(title.len() <= 256 && title.len() > 250);
+    assert!(title.starts_with("Tres Métodos de Finanzas en pareja Cuando tomas la decisión Tres"));
+}
+
+#[test]
+fn triangulates_current_shape_gating_and_missing_video() {
+    let video = String::from_utf8(CURRENT_VIDEO.to_vec()).unwrap();
+    let ruling = r#""gating_ruling":{"gating_type":3}"#;
+    // A gating ruling beside usable media does not block it.
+    let open = video.replace(r#""gating_ruling":null"#, ruling);
+    // A video without any usable `video_versions` is malformed, but becomes
+    // the signed-in error once a gating ruling explains the missing media.
+    let missing = video.replace("video_versions", "absent_versions");
+    let gated_missing = missing.replace(r#""gating_ruling":null"#, ruling);
+    let cases = [
+        (open.as_str(), None),
+        (missing.as_str(), Some(ResolverErrorKind::MalformedResponse)),
+        (
+            gated_missing.as_str(),
+            Some(ResolverErrorKind::PrivateOrUnavailable),
+        ),
+    ];
+    for (body, expected) in cases {
+        let mut client = plan(BASIC, graphql(body.as_bytes()));
+        let result = resolve_public(&mut client, URL);
+        assert_eq!(result.err().map(|error| error.kind), expected);
+    }
 }

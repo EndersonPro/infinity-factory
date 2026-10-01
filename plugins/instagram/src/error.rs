@@ -35,6 +35,13 @@ pub(crate) fn private() -> ResolverError {
         "public content is private or unavailable",
     )
 }
+pub(crate) fn signed_in_required() -> ResolverError {
+    error(
+        ResolverErrorKind::PrivateOrUnavailable,
+        false,
+        "Instagram requires a signed-in account for this post",
+    )
+}
 pub(crate) fn unavailable() -> ResolverError {
     error(
         ResolverErrorKind::Unavailable,
